@@ -1,6 +1,6 @@
 import { Resend } from 'resend'
 
-import type { Signup } from '@/lib/signup/schema'
+import { type Signup, industryLabel } from '@/lib/signup/schema'
 import { isIndexable, siteUrl } from '@/lib/site-env'
 
 /**
@@ -67,8 +67,10 @@ export function buildMessage(
     ['Name', name],
     ['Email', member.email],
     ['Phone', member.phone || '—'],
+    ['Job title', member.jobTitle],
+    ['Organisation', member.organisation || '—'],
+    ['Industry', industryLabel(member.industry) ?? '—'],
     ['Happy to receive emails', member.emailUpdates ? 'Yes' : 'No'],
-    ['Message', member.message || '—'],
   ]
   const subject = options.repeat
     ? `Sign-up again from ${plain(name)} (already a member)`

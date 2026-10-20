@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-import { SIGNUP_LIMITS } from '@/lib/signup/schema'
+import { INDUSTRIES, SIGNUP_LIMITS } from '@/lib/signup/schema'
 
 /**
  * Everyone who has signed up on the site.
@@ -19,7 +19,7 @@ export const Members: CollectionConfig = {
   slug: 'members',
   admin: {
     useAsTitle: 'email',
-    defaultColumns: ['email', 'firstName', 'lastName', 'emailUpdates', 'createdAt'],
+    defaultColumns: ['email', 'firstName', 'lastName', 'jobTitle', 'industry', 'createdAt'],
     description:
       'Everyone who has signed up on the website. Add someone by hand here if they joined another way.',
   },
@@ -53,11 +53,31 @@ export const Members: CollectionConfig = {
       },
     },
     { name: 'phone', type: 'text', maxLength: SIGNUP_LIMITS.phone },
+    // Not `required`, though the form requires them: members who joined before
+    // these were asked, and members added here by hand, have none. A NOT NULL
+    // column would also fail the migration on the rows already there.
+    {
+      type: 'row',
+      fields: [
+        { name: 'jobTitle', type: 'text', maxLength: SIGNUP_LIMITS.jobTitle },
+        { name: 'organisation', type: 'text', maxLength: SIGNUP_LIMITS.organisation },
+      ],
+    },
+    {
+      name: 'industry',
+      type: 'select',
+      options: INDUSTRIES.map(({ value, label }) => ({ value, label })),
+    },
     {
       name: 'message',
       type: 'textarea',
-      maxLength: SIGNUP_LIMITS.message,
-      admin: { description: 'Anything they wrote when signing up.' },
+      // The old form's limit. Kept so an existing message still saves.
+      maxLength: 2000,
+      admin: {
+        description: 'From the old sign-up form. No longer asked for.',
+        // Only shown on members who have one.
+        condition: (data) => Boolean(data?.message),
+      },
     },
     {
       name: 'emailUpdates',
@@ -66,7 +86,7 @@ export const Members: CollectionConfig = {
       defaultValue: false,
       admin: {
         description:
-          'Ticked by the member on the sign-up form. Only email people about the network if this is ticked.',
+          'Every sign-up from the website has this ticked: the form requires it. Members added by hand may not. Only email people about the network if this is ticked.',
       },
     },
     {

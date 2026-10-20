@@ -4,12 +4,13 @@ import { NAV_ITEMS, SIGN_UP_PATH } from '@/components/layout/navigation'
 import { Button } from '@/components/primitives/Button'
 import { Container } from '@/components/primitives/Container'
 import { Sparkle } from '@/components/primitives/Sparkle'
+import { SocialLinks } from '@/components/social/SocialLinks'
 import { getSiteSettings } from '@/lib/content'
 
 /**
  * The footer: the wordmark and sparkle as a lockup at the head, a rule under
  * it, then the invitation and sign-up button beside the navigation, and the
- * copyright line at the foot. Laid out after luxury-gardens' footer. Webflow
+ * copyright line at the foot with the network's social profiles. Laid out after luxury-gardens' footer. Webflow
  * set the wordmark across the full width at the foot of a screen-tall band,
  * which outweighed everything above it; here it is sized with the rest.
  *
@@ -66,9 +67,16 @@ export async function SiteFooter() {
             </nav>
           </div>
 
-          <p className="mt-12 text-sm text-text-muted md:mt-16">
-            © {settings.copyrightHolder} {year}.
-          </p>
+          {/* The copyright line, with the social marks at its far end from md
+              and under it on a phone. The marks' 44px boxes set the row's
+              height, so the copyright is centred on them rather than on its
+              own baseline. */}
+          <div className="mt-12 flex flex-col items-start gap-2 md:mt-16 md:flex-row md:items-center md:justify-between">
+            <p className="text-sm text-text-muted">
+              © {settings.copyrightHolder} {year}.
+            </p>
+            <SocialLinks social={settings.social} />
+          </div>
         </div>
       </Container>
     </footer>

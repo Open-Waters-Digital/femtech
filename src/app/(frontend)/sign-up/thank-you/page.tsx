@@ -3,9 +3,9 @@ import type { Metadata } from 'next'
 import { SiteHeader } from '@/components/layout/SiteHeader'
 import { Button } from '@/components/primitives/Button'
 import { Container } from '@/components/primitives/Container'
-import { Heading } from '@/components/primitives/Heading'
-import { Text } from '@/components/primitives/Text'
+import { SignupThanks } from '@/components/signup/SignupThanks'
 import { getSiteSettings } from '@/lib/content'
+import { linkedInUrl } from '@/lib/social'
 
 /** Where a sign-up sent without JavaScript lands. The enhanced form shows the same words in place. */
 export const metadata: Metadata = {
@@ -19,11 +19,15 @@ export default async function ThankYouPage() {
     <>
       <SiteHeader tone="dark" pathname="/sign-up/thank-you" />
       <main id="main" className="pt-36 pb-16 md:pt-48">
-        <Container width="statement" className="flex flex-col items-start gap-6">
-          <Heading level={1} size="2xl">
-            You’re signed up
-          </Heading>
-          <Text size="lead">{settings.signupThanks}</Text>
+        <Container width="statement" className="flex flex-col items-start gap-10">
+          <SignupThanks
+            headingLevel={1}
+            content={{
+              heading: settings.signupThanksHeading || 'You’re signed up',
+              message: settings.signupThanks,
+              linkedIn: linkedInUrl(settings.social),
+            }}
+          />
           <Button href="/" variant="secondary">
             Back to the home page
           </Button>

@@ -86,10 +86,24 @@ Bug fixes, copy changes and dependency bumps do not.
 
 ### Sign-up `/sign-up`
 
-- ✅ First name, surname, email (required); phone, message and an email-updates
-  checkbox (optional). The Webflow form had name, surname, email, phone and
-  message; the checkbox is new, because the list will be emailed and that
-  needs a record of agreement.
+- ✅ The client's copy (supplied 2026-10-20): "Become a Member. It’s free.",
+  what membership means (five benefits), coming soon, and the form under
+  "Join the Network". All of it is in the admin (Site settings → Sign-up page);
+  a section an editor empties is not drawn.
+- ✅ First name, last name, email, job title, industry (one of ten) and the
+  updates checkbox are required; phone and organisation are optional. The
+  checkbox is required because the client's copy marks it so: see Open
+  questions. The Webflow form's message field is gone; `message` stays on
+  members for anything already saved.
+- ✅ Required fields are not asterisked: optional ones say "(optional)", the
+  site's convention. The client's copy used asterisks (Open questions).
+- ✅ "We’ll only use your details…" under the button. "See our Privacy Policy."
+  follows once `PRIVACY_PATH` is set (delivery item 10); until then there is no
+  link to a page that does not exist.
+- ✅ The thank-you heading and message are editable, and end with "follow us on
+  LinkedIn" once a LinkedIn profile is set under Social profiles.
+  `components/signup/SignupThanks.tsx`, shared by the form and
+  `/sign-up/thank-you`.
 - ✅ Works without JavaScript (a native post, answered with `/sign-up/thank-you`
   or `/sign-up/not-sent?reason=…`). With JavaScript it validates in place,
   focuses the first invalid field, and shows the confirmation without leaving
@@ -102,6 +116,10 @@ Bug fixes, copy changes and dependency bumps do not.
 - ✅ Header (over the page, not fixed, as on Webflow), mobile menu, footer with
   the wordmark lockup over a rule, the invitation, the navigation and the
   copyright line (after luxury-gardens; Webflow set the wordmark full width).
+- ✅ **Social profiles** (LinkedIn, Instagram, Facebook, X), set in Site
+  settings → Social profiles, each URL checked against its platform's host
+  (`lib/social.ts`). Shown as marks at the end of the footer's copyright line;
+  nothing is drawn while there are none. After luxury-gardens' `SocialLinks`.
 - ✅ "Events (coming soon)" is text, not a link. Webflow linked it to `#`.
 - ✅ Redirects from the Webflow URLs: `/contact` → `/sign-up` (308), and the
   `.html` forms of each page.
@@ -167,15 +185,19 @@ src/
   collections/             Members, Media, Videos, Users
   globals/                 Home, About, SiteSettings: all page copy
   components/
-    primitives/            Button, Heading, Text, Eyebrow, Field, Container,
+    primitives/            Button, Heading, Text, Eyebrow, Field (and
+                           CheckboxField), Container,
                            Section, Paragraphs, PayloadImage, Sparkle, SmartLink,
                            SplitText, RollingLabel
     layout/                SiteHeader, MobileMenu, SiteFooter, RevealObserver,
                            ScrollProgress, navigation.ts
+    social/                SocialLinks, SocialMark (Simple Icons paths, CC0)
     home/, about/, signup/ page sections
   lib/
     content.ts             every read the public pages make
-    signup/                schema (shared by form and server), notify (Resend)
+    signup/                schema (shared by form and server, with the
+                           industry list), notify (Resend)
+    social.ts              platforms, labels and the profile URL check
     dwell-token.ts, rate-limit.ts   sign-up defences
     scroll-progress.ts     scroll ranges and the scrub glide, for ScrollProgress
     revalidate.ts, uploads.ts, storage.ts, site-env.ts, text.ts
@@ -380,8 +402,10 @@ Types: `feat`, `fix`, `refactor`, `perf`, `docs`, `test`, `build`, `ci`,
 
 ## Privacy and compliance
 
-- **Collected:** first name, surname, email, optional phone, optional message,
-  whether they agreed to emails, and when they signed up. Stored in Postgres on
+- **Collected:** first name, last name, email, job title, industry, optional
+  phone, optional organisation, agreement to updates (required on the form),
+  and when they signed up. No message since 2026-10-20; older rows may hold
+  one. Stored in Postgres on
   Railway, shown only in the admin, and sent to the team by email through
   Resend.
 - **Not collected:** no cookies, no tracking, no analytics until delivery
@@ -423,11 +447,19 @@ Types: `feat`, `fix`, `refactor`, `perf`, `docs`, `test`, `build`, `ci`,
 - 🧪 **Privacy notice wording, retention period and lawful basis** for the
   members list. Take them from the client or their adviser; do not draft legal
   copy.
-- 🧪 **Sign-up copy written here, not supplied:** the thank-you message, the
-  message field's hint, the checkbox wording and the not-sent messages. The
-  thank-you message is editable in the admin; the rest is in code.
-- 🧪 **The checkbox.** Optional and unticked. Confirm that is what the client
-  wants, and whether joining without it still means occasional network emails.
+- 🧪 **Sign-up copy written here, not supplied:** the field error messages and
+  the not-sent messages, in code.
+- 🧪 **The required updates checkbox.** The client's copy makes it a condition
+  of joining. Under UK GDPR, consent that is a condition of a service is
+  generally not freely given unless membership _is_ the updates. The client or
+  their adviser must confirm before launch; making it optional again is one
+  line in `lib/signup/schema.ts` and the label.
+- 🧪 **Asterisks.** The client's copy marks required fields with `*`; the site
+  marks optional ones instead. Confirm, or flip it in `Field`.
+- 🧪 **The network's LinkedIn URL** (and any other profiles), for the footer and
+  the thank-you message. Enter in Site settings → Social profiles.
+- 🧪 **"December 2026"** in the sign-up copy will go stale. Editable in the
+  admin.
 - 🧪 **Brand name.** The site uses "femtech" as the wordmark, "Femtech" in the
   home copy and the copyright line (as on Webflow), and "FemTech Healthcare
   Network" in the about copy and the page titles. Confirm which the copyright

@@ -141,12 +141,28 @@ export interface Member {
   lastName: string;
   email: string;
   phone?: string | null;
+  jobTitle?: string | null;
+  organisation?: string | null;
+  industry?:
+    | (
+        | 'clinical'
+        | 'healthtech'
+        | 'digital-health'
+        | 'femtech'
+        | 'life-sciences'
+        | 'investment'
+        | 'public-sector'
+        | 'consulting'
+        | 'academia'
+        | 'other'
+      )
+    | null;
   /**
-   * Anything they wrote when signing up.
+   * From the old sign-up form. No longer asked for.
    */
   message?: string | null;
   /**
-   * Ticked by the member on the sign-up form. Only email people about the network if this is ticked.
+   * Every sign-up from the website has this ticked: the form requires it. Members added by hand may not. Only email people about the network if this is ticked.
    */
   emailUpdates?: boolean | null;
   status: 'active' | 'unsubscribed';
@@ -341,6 +357,9 @@ export interface MembersSelect<T extends boolean = true> {
   lastName?: T;
   email?: T;
   phone?: T;
+  jobTitle?: T;
+  organisation?: T;
+  industry?: T;
   message?: T;
   emailUpdates?: T;
   status?: T;
@@ -614,12 +633,48 @@ export interface SiteSetting {
    * Shown as "© <this> <year>".
    */
   copyrightHolder: string;
+  /**
+   * The small line above the title, such as "Sign Up".
+   */
+  signupEyebrow?: string | null;
   signupTitle: string;
   signupLead?: string | null;
+  signupBenefitsHeading?: string | null;
+  signupBenefitsIntro?: string | null;
+  /**
+   * Each is shown as "Title: description". Remove them all to hide the section.
+   */
+  signupBenefits?:
+    | {
+        title: string;
+        description: string;
+        id?: string | null;
+      }[]
+    | null;
+  signupComingSoonHeading?: string | null;
+  /**
+   * Leave empty to hide the section.
+   */
+  signupComingSoonBody?: string | null;
+  /**
+   * Above the form, such as "Join the Network".
+   */
+  signupFormHeading?: string | null;
   /**
    * Shown once someone has signed up.
    */
+  signupThanksHeading?: string | null;
+  /**
+   * Paragraphs on blank lines. The LinkedIn invitation follows it when a LinkedIn profile is set under Social profiles.
+   */
   signupThanks: string;
+  social?:
+    | {
+        platform: 'linkedin' | 'instagram' | 'facebook' | 'x';
+        href: string;
+        id?: string | null;
+      }[]
+    | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -709,9 +764,30 @@ export interface SiteSettingsSelect<T extends boolean = true> {
   footerHeading?: T;
   footerCtaLabel?: T;
   copyrightHolder?: T;
+  signupEyebrow?: T;
   signupTitle?: T;
   signupLead?: T;
+  signupBenefitsHeading?: T;
+  signupBenefitsIntro?: T;
+  signupBenefits?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        id?: T;
+      };
+  signupComingSoonHeading?: T;
+  signupComingSoonBody?: T;
+  signupFormHeading?: T;
+  signupThanksHeading?: T;
   signupThanks?: T;
+  social?:
+    | T
+    | {
+        platform?: T;
+        href?: T;
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

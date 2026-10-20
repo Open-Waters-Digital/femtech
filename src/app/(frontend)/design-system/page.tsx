@@ -5,7 +5,7 @@ import { SiteHeader } from '@/components/layout/SiteHeader'
 import { Button } from '@/components/primitives/Button'
 import { Container } from '@/components/primitives/Container'
 import { Eyebrow } from '@/components/primitives/Eyebrow'
-import { Field } from '@/components/primitives/Field'
+import { CheckboxField, Field } from '@/components/primitives/Field'
 import { Heading } from '@/components/primitives/Heading'
 import { Paragraphs } from '@/components/primitives/Paragraphs'
 import { RollingLabel } from '@/components/primitives/RollingLabel'
@@ -13,6 +13,9 @@ import { Section } from '@/components/primitives/Section'
 import { Sparkle } from '@/components/primitives/Sparkle'
 import { SplitText } from '@/components/primitives/SplitText'
 import { Text } from '@/components/primitives/Text'
+import { SocialLinks } from '@/components/social/SocialLinks'
+import { SocialMark } from '@/components/social/SocialMark'
+import { SOCIAL_PLATFORMS, type SocialProfile } from '@/lib/social'
 
 /**
  * The living showcase: every token and every primitive, with every variant,
@@ -44,6 +47,14 @@ const SWATCHES = [
   { name: 'danger-soft', className: 'bg-danger-soft' },
   { name: 'success', className: 'bg-success' },
 ] as const
+
+/** Every platform once, so each mark is drawn. Hrefs are placeholders. */
+const SHOWCASE_SOCIAL: SocialProfile[] = [
+  { platform: 'linkedin', href: 'https://www.linkedin.com/' },
+  { platform: 'instagram', href: 'https://www.instagram.com/' },
+  { platform: 'facebook', href: 'https://www.facebook.com/' },
+  { platform: 'x', href: 'https://x.com/' },
+]
 
 function ShowcaseSection({
   title,
@@ -205,6 +216,9 @@ export default function DesignSystemPage() {
               <Text tone="inverse">inverse</Text>
               <Text tone="inverse-muted">inverse-muted</Text>
             </Row>
+            <Row axis="SocialLinks on ink: tab to a mark for the cream focus ring">
+              <SocialLinks social={SHOWCASE_SOCIAL} />
+            </Row>
           </Container>
         </Section>
         <Section tone="sage">
@@ -243,6 +257,58 @@ export default function DesignSystemPage() {
                 {(props) => <input {...props} type="text" />}
               </Field>
             </div>
+            <Row axis="control select: default, invalid (tab to one for focus)">
+              <div className="grid w-full max-w-content gap-6 md:grid-cols-3">
+                <Field name="showcase-select" label="Select" control="select" required>
+                  {(props) => (
+                    <select {...props} defaultValue="">
+                      <option value="" disabled>
+                        Choose your industry
+                      </option>
+                      <option value="one">Healthcare technology</option>
+                      <option value="two">Women’s health / FemTech</option>
+                    </select>
+                  )}
+                </Field>
+                <Field
+                  name="showcase-select-invalid"
+                  label="Select, invalid"
+                  control="select"
+                  required
+                  error="Please choose your industry."
+                >
+                  {(props) => (
+                    <select {...props} defaultValue="">
+                      <option value="" disabled>
+                        Choose your industry
+                      </option>
+                      <option value="one">Healthcare technology</option>
+                    </select>
+                  )}
+                </Field>
+              </div>
+            </Row>
+            <Row axis="CheckboxField: unticked, ticked, invalid, with hint">
+              <div className="grid w-full max-w-content gap-6 md:grid-cols-2">
+                <CheckboxField name="showcase-check" label="Unticked: a statement to agree to." />
+                <CheckboxField
+                  name="showcase-check-ticked"
+                  label="Ticked: a statement already agreed to."
+                  defaultChecked
+                />
+                <CheckboxField
+                  name="showcase-check-invalid"
+                  label="Invalid: a required statement left unticked."
+                  required
+                  error="Please tick this box to become a member."
+                />
+                <CheckboxField
+                  name="showcase-check-hint"
+                  label="With a hint."
+                  hint="Guidance under the statement."
+                />
+              </div>
+            </Row>
           </ShowcaseSection>
 
           <ShowcaseSection
@@ -280,6 +346,26 @@ export default function DesignSystemPage() {
               <Sparkle className="size-3" />
               <Sparkle className="size-6 text-ornament" />
               <Sparkle className="size-12 text-text-sage" />
+            </Row>
+          </ShowcaseSection>
+
+          <ShowcaseSection
+            title="SocialLinks and SocialMark"
+            path="@/components/social/SocialLinks, SocialMark"
+          >
+            <Row axis="SocialMark, every platform; size and colour follow the text">
+              {SOCIAL_PLATFORMS.map((platform) => (
+                <SocialMark key={platform} platform={platform} className="size-6" />
+              ))}
+            </Row>
+            <Row axis="SocialLinks on cream: hover dims, tab for the focus ring">
+              <SocialLinks social={SHOWCASE_SOCIAL} />
+            </Row>
+            <Row axis="SocialLinks with no profiles renders nothing">
+              <SocialLinks social={[]} />
+              <Text size="sm" tone="subtle">
+                (nothing above this line)
+              </Text>
             </Row>
           </ShowcaseSection>
         </Container>

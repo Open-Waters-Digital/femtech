@@ -3,10 +3,12 @@
 import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react'
 
 import { Button } from '@/components/primitives/Button'
-import { Field } from '@/components/primitives/Field'
-import { Heading } from '@/components/primitives/Heading'
-import { Text } from '@/components/primitives/Text'
+import { CheckboxField, Field } from '@/components/primitives/Field'
+import { SmartLink } from '@/components/primitives/SmartLink'
+import { SignupThanks, type SignupThanksContent } from '@/components/signup/SignupThanks'
+import { PRIVACY_PATH } from '@/components/layout/navigation'
 import {
+  INDUSTRIES,
   SIGNUP_LIMITS,
   type SignupFieldErrors,
   signupInput,
@@ -29,7 +31,13 @@ type Status =
  * fetch, and shows the outcome in place, keeping what was typed if anything
  * goes wrong.
  */
-export function SignupForm({ thanks, initialToken }: { thanks: string; initialToken: string }) {
+export function SignupForm({
+  thanks,
+  initialToken,
+}: {
+  thanks: SignupThanksContent
+  initialToken: string
+}) {
   const [errors, setErrors] = useState<SignupFieldErrors>({})
   const [status, setStatus] = useState<Status>({ kind: 'editing' })
   // Minted by the page as it rendered. Replaced from /join/token only when the
@@ -111,14 +119,8 @@ export function SignupForm({ thanks, initialToken }: { thanks: string; initialTo
 
   if (status.kind === 'sent') {
     return (
-      <div
-        className="flex flex-col gap-4 rounded-frame bg-surface-raised p-8 md:p-12"
-        role="status"
-      >
-        <Heading level={2} size="lg" tabIndex={-1} ref={thanksHeading}>
-          You’re signed up
-        </Heading>
-        <Text size="lead">{thanks}</Text>
+      <div className="rounded-frame bg-surface-raised p-8 md:p-12" role="status">
+        <SignupThanks content={thanks} headingRef={thanksHeading} />
       </div>
     )
   }
@@ -144,7 +146,7 @@ export function SignupForm({ thanks, initialToken }: { thanks: string; initialTo
             />
           )}
         </Field>
-        <Field name="lastName" label="Surname" required error={errors.lastName}>
+        <Field name="lastName" label="Last name" required error={errors.lastName}>
           {(props) => (
             <input
               {...props}
@@ -156,7 +158,7 @@ export function SignupForm({ thanks, initialToken }: { thanks: string; initialTo
         </Field>
       </div>
       <div className="grid gap-6 md:grid-cols-2">
-        <Field name="email" label="Email" required error={errors.email}>
+        <Field name="email" label="Email address" required error={errors.email}>
           {(props) => (
             <input
               {...props}
@@ -167,31 +169,57 @@ export function SignupForm({ thanks, initialToken }: { thanks: string; initialTo
             />
           )}
         </Field>
-        <Field name="phone" label="Phone" error={errors.phone}>
+        <Field name="phone" label="Phone number" error={errors.phone}>
           {(props) => (
             <input {...props} type="tel" autoComplete="tel" maxLength={SIGNUP_LIMITS.phone} />
           )}
         </Field>
       </div>
-      <Field
-        name="message"
-        label="Message"
-        hint="Your role, your organisation, or what you’d like from the network."
-        error={errors.message}
-      >
-        {(props) => <textarea {...props} rows={5} maxLength={SIGNUP_LIMITS.message} />}
+      <div className="grid gap-6 md:grid-cols-2">
+        <Field name="jobTitle" label="Job title" required error={errors.jobTitle}>
+          {(props) => (
+            <input
+              {...props}
+              type="text"
+              autoComplete="organization-title"
+              maxLength={SIGNUP_LIMITS.jobTitle}
+            />
+          )}
+        </Field>
+        <Field name="organisation" label="Organisation" error={errors.organisation}>
+          {(props) => (
+            <input
+              {...props}
+              type="text"
+              autoComplete="organization"
+              maxLength={SIGNUP_LIMITS.organisation}
+            />
+          )}
+        </Field>
+      </div>
+      <Field name="industry" label="Industry" required control="select" error={errors.industry}>
+        {(props) => (
+          // An empty first option, so "not chosen" is its own state rather
+          // than a silent "Other". Disabled, so it cannot be chosen back.
+          <select {...props} defaultValue="">
+            <option value="" disabled>
+              Choose your industry
+            </option>
+            {INDUSTRIES.map((industry) => (
+              <option key={industry.value} value={industry.value}>
+                {industry.label}
+              </option>
+            ))}
+          </select>
+        )}
       </Field>
 
-      <label className="flex items-start gap-3 text-base">
-        <input
-          type="checkbox"
-          name="emailUpdates"
-          className="mt-1 size-5 shrink-0 accent-surface-inverse"
-        />
-        <span>
-          I’m happy to receive emails from FemTech Healthcare Network about events and news.
-        </span>
-      </label>
+      <CheckboxField
+        name="emailUpdates"
+        required
+        error={errors.emailUpdates}
+        label="I’d like to receive updates from FemTech Healthcare Network about events, membership and products. I can unsubscribe at any time."
+      />
 
       {/* Honeypot. Off-screen rather than display:none, which some bots skip;
           out of the tab order and hidden from assistive technology, so no
@@ -210,10 +238,25 @@ export function SignupForm({ thanks, initialToken }: { thanks: string; initialTo
         </p>
       ) : null}
 
-      <div>
+      <div className="flex flex-col items-start gap-4">
         <Button type="submit" size="lg" disabled={sending}>
-          {sending ? 'Signing up…' : 'Sign Up'}
+          {sending ? 'Sending…' : 'Become a Member'}
         </Button>
+        <p className="font-body text-sm text-text-muted">
+          We’ll only use your details to keep you updated about FemTech Healthcare Network.
+          {/* The link waits for the privacy page (delivery item 10): a link
+              to a page that does not exist yet is worse than none. */}
+          {PRIVACY_PATH ? (
+            <>
+              {' '}
+              See our{' '}
+              <SmartLink href={PRIVACY_PATH} className="underline underline-offset-4">
+                Privacy Policy
+              </SmartLink>
+              .
+            </>
+          ) : null}
+        </p>
       </div>
     </form>
   )

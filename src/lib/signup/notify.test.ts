@@ -8,8 +8,10 @@ const MEMBER = {
   lastName: 'Lovelace',
   email: 'ada@example.com',
   phone: '+44 20 7946 0958',
-  message: 'Looking forward to it.',
-  emailUpdates: true,
+  jobTitle: 'Chief Medical Officer',
+  organisation: 'Analytical Health',
+  industry: 'digital-health' as const,
+  emailUpdates: true as const,
 }
 
 const ENV_KEYS = ['RESEND_API_KEY', 'SIGNUP_FROM_EMAIL', 'SIGNUP_NOTIFY_EMAIL', 'SITE_ENV']
@@ -72,6 +74,33 @@ describe('buildMessage', () => {
     )
     expect(message.subject).not.toMatch(/[\r\n]/)
     expect(message.html).not.toContain('<b>Ada')
+  })
+
+  it('lists the job title, the organisation and the industry by its label', () => {
+    const message = buildMessage(MEMBER, { from: 'f', to: ['t'], repeat: false })
+    expect(message.text).toContain('Job title: Chief Medical Officer')
+    expect(message.text).toContain('Organisation: Analytical Health')
+    expect(message.text).toContain('Industry: Digital health / HealthTech startup')
+    expect(message.html).toContain('Digital health / HealthTech startup')
+    expect(message.text).not.toContain('digital-health')
+  })
+
+  it('shows a dash for an empty organisation, and no message row', () => {
+    const message = buildMessage(
+      { ...MEMBER, organisation: '' },
+      { from: 'f', to: ['t'], repeat: false },
+    )
+    expect(message.text).toContain('Organisation: —')
+    expect(message.text).not.toContain('Message')
+  })
+
+  it('shows a job title with markup in it as text', () => {
+    const message = buildMessage(
+      { ...MEMBER, jobTitle: '<script>alert(1)</script>' },
+      { from: 'f', to: ['t'], repeat: false },
+    )
+    expect(message.html).not.toContain('<script>')
+    expect(message.html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;')
   })
 
   it('says so when the address was already a member', () => {

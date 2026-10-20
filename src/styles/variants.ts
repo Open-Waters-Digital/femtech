@@ -156,6 +156,12 @@ export function sectionClasses(tone: SectionTone): string {
  * --------------------------------------------------------------------- */
 
 export type FieldState = 'default' | 'invalid'
+/**
+ * What the field wraps. A select draws no native arrow (it differs per browser
+ * and cannot take the ink colour), so it leaves room for the chevron Field
+ * draws over its right edge.
+ */
+export type FieldControl = 'input' | 'select'
 
 const FIELD_BASE =
   'block w-full rounded-sm border bg-surface-raised px-4 py-3 font-body text-base text-text ' +
@@ -172,6 +178,31 @@ const FIELD_STATES: Record<FieldState, string> = {
   invalid: 'border-danger bg-danger-soft',
 }
 
-export function fieldClasses(state: FieldState): string {
-  return [FIELD_BASE, FIELD_STATES[state]].join(' ')
+const FIELD_CONTROLS: Record<FieldControl, string> = {
+  input: '',
+  select: 'cursor-pointer appearance-none pr-12',
 }
+
+export function fieldClasses(state: FieldState, control: FieldControl = 'input'): string {
+  return [FIELD_BASE, FIELD_STATES[state], FIELD_CONTROLS[control]].filter(Boolean).join(' ')
+}
+
+/* ------------------------------------------------------------------------
+ * CheckboxField
+ * --------------------------------------------------------------------- */
+
+/**
+ * The box is the browser's own, tinted with accent-color, so it keeps the
+ * platform's checked, focus and high-contrast behaviour. Invalid tints the row
+ * as a text field tints its box; the message under it says why in words.
+ */
+const CHECKBOX_ROW_STATES: Record<FieldState, string> = {
+  default: 'flex items-start gap-3',
+  invalid: 'flex items-start gap-3 rounded-sm bg-danger-soft -mx-3 px-3 py-3',
+}
+
+export function checkboxRowClasses(state: FieldState): string {
+  return CHECKBOX_ROW_STATES[state]
+}
+
+export const CHECKBOX_INPUT_CLASSES = 'mt-0.5 size-5 shrink-0 cursor-pointer accent-surface-inverse'

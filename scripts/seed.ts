@@ -100,14 +100,66 @@ async function seedSiteSettings(payload: Payload): Promise<void> {
         'We welcome you to register your interest and join a community shaping the future of women in healthcare technology.',
       footerCtaLabel: 'Sign Up',
       copyrightHolder: 'Femtech',
-      signupTitle: 'Join the Network',
-      signupLead:
-        'Whether you’re building, investing, leading or just starting out in healthcare technology, there’s a place for you here.',
-      signupThanks:
-        'Thank you for signing up. You’re on the list, and we’ll be in touch as the network grows.',
+      ...SIGNUP_COPY,
     },
   })
   console.log('site settings: written')
+}
+
+/**
+ * The sign-up page's copy, supplied by the client on 20 October 2026. Verbatim.
+ *
+ * Its own step, keyed on the eyebrow, so a database seeded before the page was
+ * rewritten gets the new copy without SEED_OVERWRITE (which would also replace
+ * the home and about pages). Once the eyebrow has a value it is never touched.
+ */
+const SIGNUP_COPY = {
+  signupEyebrow: 'Sign Up',
+  signupTitle: 'Become a Member. It’s free.',
+  signupLead:
+    'Join FemTech Healthcare Network and be part of a global community of women shaping the future of healthcare technology.',
+  signupBenefitsHeading: 'What membership means',
+  signupBenefitsIntro:
+    'Membership is free and gives you first access to everything we’re building:',
+  signupBenefits: [
+    {
+      title: 'Curated events',
+      description: 'intimate gatherings designed for meaningful connections, not crowded rooms',
+    },
+    {
+      title: 'Speakeasies',
+      description:
+        'relaxed, invitation-style evenings to meet peers, share ideas and build your network',
+    },
+    {
+      title: 'Keynotes',
+      description: 'insight and inspiration from leaders transforming healthcare and technology',
+    },
+    {
+      title: 'Investment pitches',
+      description:
+        'spaces where women founders and innovators can meet investors and pitch for the backing to scale',
+    },
+    {
+      title: 'Member spaces',
+      description: 'new platforms to connect, collaborate and grow, launching soon',
+    },
+  ],
+  signupComingSoonHeading: 'Coming soon',
+  signupComingSoonBody:
+    'Our full events schedule launches on our Events page in December 2026, along with new products and member offerings. Sign up now and you’ll be the first to hear when it goes live.',
+  signupFormHeading: 'Join the Network',
+  signupThanksHeading: 'Welcome to FemTech Healthcare Network.',
+  signupThanks:
+    'You’re officially a member. Keep an eye on your inbox: our events schedule, investment pitch opportunities and new member offerings launch in December 2026, and you’ll be the first to know.',
+}
+
+async function seedSignupCopy(payload: Payload): Promise<void> {
+  if (!OVERWRITE && !(await isEmpty(payload, 'site-settings', 'signupEyebrow'))) {
+    return console.log('sign-up copy: has content, skipped')
+  }
+  await payload.updateGlobal({ slug: 'site-settings', data: SIGNUP_COPY })
+  console.log('sign-up copy: written')
 }
 
 async function seedHome(payload: Payload): Promise<void> {
@@ -281,6 +333,7 @@ async function seedAbout(payload: Payload): Promise<void> {
 const payload = await getPayload({ config })
 await seedAdmin(payload)
 await seedSiteSettings(payload)
+await seedSignupCopy(payload)
 await seedHome(payload)
 await seedAbout(payload)
 console.log('seed: done')
