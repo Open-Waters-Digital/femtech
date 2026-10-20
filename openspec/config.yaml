@@ -1,0 +1,41 @@
+schema: spec-driven
+
+context: |
+  femtechhealth.com: the website of FemTech Healthcare Network, a global
+  community for women in healthcare technology, rebuilt from Webflow. Three
+  public pages (home, about, sign-up) and a members list that sign-ups write to
+  and the team is emailed about through Resend. The members list is expected to
+  grow into real membership features.
+
+  Stack: TypeScript strict, Next.js 16 (App Router), React 19, Payload CMS
+  3.90.1 on Postgres, Tailwind v4 with a token layer, S3 for media, deployed to
+  Railway from a Dockerfile. Public pages render per request; the build never
+  reads the database.
+
+  Read AGENTS.md before proposing anything. It is the source of truth for scope,
+  standards and the delivery order, and it is swept after every shipped change.
+
+  Two rules that catch people out here:
+  - Feature code references design tokens, never a literal colour. ESLint fails
+    on a hex literal in src/**.
+  - A component is not done until it is on /design-system with every variant,
+    size and state, in the same change that introduced it.
+
+  Conventional Commits, first line only. The body carries the reasoning.
+
+rules:
+  proposal:
+    - State what it costs as well as what it adds.
+    - Say explicitly whether it touches POST /join or the members collection.
+      That is the only place the public can write to this system, and it holds
+      personal data; a change there names its failure modes and its privacy
+      effect.
+  tasks:
+    - Each task independently shippable, leaving the gate green.
+    - A task that adds a component includes its showcase entry. Not a follow-up.
+
+operations:
+  apply:
+    guidance:
+      - Run `pnpm run ci:quality` and report the real output, including failures.
+      - Verify against the running app, not only against the tests.

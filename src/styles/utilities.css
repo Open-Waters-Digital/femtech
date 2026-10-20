@@ -1,0 +1,101 @@
+/**
+ * Custom utilities for values Tailwind has no namespace for, so feature code
+ * never reaches for an arbitrary value.
+ */
+
+@utility gutter {
+  padding-inline: var(--spacing-gutter);
+  @media (width >= 48rem) {
+    padding-inline: var(--spacing-gutter-lg);
+  }
+}
+
+@utility section-y {
+  padding-block: var(--spacing-section);
+  @media (width >= 48rem) {
+    padding-block: var(--spacing-section-lg);
+  }
+}
+
+/* The mount around the hero video and the full-bleed cards. */
+@utility frame {
+  padding: var(--spacing-frame);
+  @media (width >= 48rem) {
+    padding: var(--spacing-frame-lg);
+  }
+}
+
+/* A dark ground. Swaps the focus ring to cream, so a keyboard user can still
+ * see where they are on ink, sage or a photograph. */
+@utility ground-dark {
+  --color-focus: var(--color-text-inverse);
+}
+
+/* The small capitalised label above a statement. */
+@utility eyebrow-face {
+  font-family: var(--font-body);
+  font-weight: 500;
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+}
+
+/* The wordmark. Zodiak at a viewport size, set tight, as the Webflow hero. */
+@utility wordmark {
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: var(--tracking-tight);
+}
+
+/* The Webflow video overlay: clear in the middle, darkening to the edges. */
+@utility scrim-radial {
+  background-image: radial-gradient(
+    circle,
+    rgb(23 20 17 / 0) 20%,
+    color-mix(in srgb, var(--color-scrim) 73%, transparent)
+  );
+}
+
+/* Under copy anchored to the foot of a photograph. */
+@utility scrim-foot {
+  background-image: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--color-scrim) 72%, transparent),
+    rgb(0 0 0 / 0) 65%
+  );
+}
+
+/* Rich text set from plain paragraphs. */
+@utility prose-body {
+  color: var(--color-text-muted);
+  line-height: var(--leading-relaxed);
+  & > * + * {
+    margin-block-start: 1em;
+  }
+  & strong {
+    color: var(--color-text);
+    font-weight: 700;
+  }
+}
+
+@utility z-raised {
+  z-index: var(--z-raised);
+}
+@utility z-header {
+  z-index: var(--z-header);
+}
+@utility z-menu {
+  z-index: var(--z-menu);
+}
+@utility duration-fast {
+  transition-duration: var(--duration-fast);
+}
+@utility duration-base {
+  transition-duration: var(--duration-base);
+}
+@utility duration-slow {
+  transition-duration: var(--duration-slow);
+}
+@utility opacity-scrim {
+  opacity: var(--opacity-scrim);
+}

@@ -1,0 +1,14 @@
+node_modules
+.next
+.git
+.github
+test-results
+playwright-report
+coverage
+.DS_Store
+*.tsbuildinfo
+femtech-9ce3f2.webflow
+femtech-9ce3f2.webflow.zip
+tanya-hero.webp
+media
+videos

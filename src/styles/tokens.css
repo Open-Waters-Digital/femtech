@@ -1,0 +1,146 @@
+/**
+ * Design tokens. Start here for anything visual.
+ *
+ * Feature code references these and never a literal value; the ESLint
+ * no-restricted-syntax rule fails on hex literals in src/** to keep it so.
+ *
+ * The brand values are lifted exactly from the Webflow site this replaces
+ * (femtech-9ce3f2.webflow.css): cream #efe5d7, ink #171411, the second cream
+ * #e8ddcc, the sand of the sparkle ornament #d1c5af, and the about page's sage
+ * #596756. Everything else is derived from those and says so.
+ *
+ * Every contrast ratio below was measured with the WCAG formula. Light only.
+ */
+@theme {
+  /* ---------------------------------------------------------------------
+   * Surfaces.
+   * ------------------------------------------------------------------ */
+  --color-surface: #efe5d7; /* brand cream: the page ground */
+  --color-surface-sunken: #e8ddcc; /* brand second cream */
+  /* Derived: a step lighter than the ground, so a form field reads as a box on
+   * it. The Webflow fields were transparent with a hairline, which is hard to
+   * find on a phone in sunlight. */
+  --color-surface-raised: #f7f1e8;
+  --color-surface-inverse: #171411; /* brand ink */
+  --color-surface-sage: #596756; /* the about page's band */
+  /* ---------------------------------------------------------------------
+   * Text.
+   * ------------------------------------------------------------------ */
+  --color-text: #171411; /* 14.73:1 on surface */
+  /* Derived from ink toward cream. 7.55:1 on surface, 7.01:1 on sunken. */
+  --color-text-muted: #4d453c;
+  /* 5.25:1 on surface, 4.87:1 on sunken. Captions and metadata. */
+  --color-text-subtle: #665c50;
+  --color-text-inverse: #efe5d7; /* 14.73:1 on ink, 4.82:1 on sage */
+  /* Body copy that recedes on ink. 10.11:1. Not for use on sage, where only
+   * the cream itself clears 4.5:1. */
+  --color-text-inverse-muted: #c9bfb1;
+  /* The sage as text, for the about page's labels on cream. 4.82:1 on surface;
+   * 4.47:1 on sunken, so keep it to the surface ground or to large text. */
+  --color-text-sage: #596756;
+  /* ---------------------------------------------------------------------
+   * Lines and ornament.
+   * ------------------------------------------------------------------ */
+  --color-line: #c9bfb1; /* a rule between sections. 1.46:1, decorative */
+  --color-line-strong: #a8a094; /* 2.08:1, a card or table edge */
+  /* An input's border. WCAG 1.4.11 wants 3:1 for a control boundary: 3.37:1 on
+   * surface, 3.74:1 on raised, 3.13:1 on sunken. */
+  --color-line-control: #857a6c;
+  --color-line-inverse: #4d453c; /* a rule on ink */
+  /* The four-pointed sparkle in the statement and on cards. Brand sand. */
+  --color-ornament: #d1c5af;
+  --color-ornament-inverse: #efe5d7;
+  /* ---------------------------------------------------------------------
+   * Status. Only the sign-up form shows these.
+   * ------------------------------------------------------------------ */
+  --color-danger: #8c3a30; /* 6.10:1 on surface, 6.77:1 on raised */
+  --color-danger-soft: #f6e3dd;
+  --color-success: #3f6228; /* 5.64:1 on surface */
+  /* The focus ring on light grounds. Dark grounds swap it for the cream: see
+   * the `ground-dark` utility. */
+  --color-focus: #171411;
+  /* The wash over hero video and card photographs, so cream text holds on any
+   * frame. The Webflow overlay was a radial gradient to #000000ba. */
+  --color-scrim: #000000;
+  /* ---------------------------------------------------------------------
+   * Type. Zodiak for display, Cabinet Grotesk for everything read. Both from
+   * Fontshare (Indian Type Foundry) and both self-hosted: see fonts.css.
+   * ------------------------------------------------------------------ */
+  --font-display: 'Zodiak', Georgia, serif;
+  --font-body: 'Cabinet Grotesk', system-ui, sans-serif;
+
+  --text-2xs: 0.75rem;
+  --text-xs: 0.8125rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-lead: clamp(1.125rem, 0.4vw + 1.05rem, 1.375rem);
+  --text-xl: clamp(1.25rem, 0.5vw + 1.1rem, 1.5rem);
+  --text-2xl: clamp(1.5rem, 1vw + 1.2rem, 2rem);
+  /* The home page's centred statements. 2.5rem at desktop, as on Webflow. */
+  --text-3xl: clamp(1.625rem, 1.6vw + 1.2rem, 2.5rem);
+  --text-4xl: clamp(2.25rem, 3vw + 1.4rem, 4rem);
+  --text-5xl: clamp(2.75rem, 5vw + 1.25rem, 6rem);
+  --text-6xl: clamp(3.25rem, 8vw + 1rem, 9rem);
+  /* The wordmark: 17vw in the hero, as on Webflow. The footer sets it at
+   * text-4xl as a lockup instead.
+   * Viewport units on purpose. The word is the hero's whole composition and
+   * should span the same share of any screen. */
+  --text-wordmark: 17vw;
+
+  --leading-none: 0.85;
+  --leading-tight: 1.1;
+  --leading-snug: 1.3;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+
+  --tracking-tight: -0.02em;
+  --tracking-eyebrow: 0.08em;
+  /* ---------------------------------------------------------------------
+   * Layout.
+   * ------------------------------------------------------------------ */
+  /* --container-measure, not --container-prose: max-w-prose is a Tailwind
+   * built-in that a theme token does not override. */
+  --container-measure: 64ch;
+  --container-statement: 62rem; /* the centred statements, ~100ch at 2.5rem */
+  /* The header, footer and full-width bands. With the gutter, about the 90vw
+   * axis the Webflow site used at desktop widths. */
+  --container-content: 86rem;
+  --container-wide: 120rem;
+  --spacing-gutter: 1.25rem;
+  --spacing-gutter-lg: 2.5rem; /* Webflow's padding-global */
+  --spacing-section: 5rem;
+  --spacing-section-lg: 8rem; /* Webflow's padding-section-large */
+  /* The inset that frames the hero video and the cards, like a mount. */
+  --spacing-frame: 0.5rem;
+  --spacing-frame-lg: 1rem;
+  --spacing-header: 5.5rem;
+  /* ---------------------------------------------------------------------
+   * Radii, from Webflow: buttons .4rem, frames .5rem, photographs 1rem.
+   * ------------------------------------------------------------------ */
+  --radius-sm: 0.25rem;
+  --radius-button: 0.4rem;
+  --radius-frame: 0.5rem;
+  --radius-photo: 1rem;
+  --radius-full: 9999px;
+  /* ---------------------------------------------------------------------
+   * Elevation. Ink-tinted, so a shadow on cream reads as depth, not dirt.
+   * ------------------------------------------------------------------ */
+  --shadow-photo: 0 18px 48px rgb(23 20 17 / 0.18);
+  /* ---------------------------------------------------------------------
+   * Motion. Suppressed under prefers-reduced-motion in base.css.
+   * ------------------------------------------------------------------ */
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --duration-slow: 450ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  /* ---------------------------------------------------------------------
+   * Z-index and opacity. Tailwind has no namespace for these, so
+   * utilities.css declares the classes that read them.
+   * ------------------------------------------------------------------ */
+  --z-raised: 10;
+  --z-header: 30;
+  --z-menu: 40;
+  --opacity-scrim: 0.45;
+}

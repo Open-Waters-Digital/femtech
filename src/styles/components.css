@@ -1,0 +1,273 @@
+/**
+ * Motion, and the few components whose behaviour is CSS rather than classes.
+ *
+ * Every animation here is the Webflow site's, taken from the interaction data
+ * in its webflow.js (IX3): the same targets, timings, distances, angles and
+ * eases. Webflow ran them with GSAP; here they are CSS, with SplitText done
+ * once on the server (components/primitives/SplitText.tsx).
+ *
+ * IX3 stores eases as numbers indexing GSAP's list, which reads none, then
+ * power1 to power4 as in/out/inOut. So 0 is linear, 1 power1.in (quadratic),
+ * 4 power2.in (cubic), 7 power3.in (quartic), 8 power3.out. Confirmed by
+ * sampling the live site frame by frame; 35 sampled as linear. Most of the
+ * site eases *in*, which looks wrong on paper and is what the site does.
+ *
+ * Each one is written for `prefers-reduced-motion: no-preference` only, so the
+ * still state is the base and the motion is added on top of it. The global
+ * reduced-motion rule in base.css is the backstop, not the mechanism. The
+ * scroll-linked ones (the hero, the photographs) are driven by ScrollProgress,
+ * which does nothing under reduced motion.
+ */
+
+/* ------------------------------------------------------------------------
+ * Rolling labels. Buttons roll word by word and nav links letter by letter,
+ * the last piece first, as on Webflow (stagger 0.1s and 0.05s "from end").
+ * The second copy waits below the first and rises into its place.
+ * --------------------------------------------------------------------- */
+@layer components {
+  .roll {
+    position: relative;
+    display: inline-block;
+    overflow: hidden;
+    vertical-align: top;
+    /* Room for ascenders and descenders, which overflow: hidden would clip. */
+    padding-block: 0.1em;
+  }
+
+  /* Buttons: 0.1s stagger, power2.in. Nav links: 0.05s, power1.in. */
+  .roll[data-roll='words'] {
+    --roll-stagger: 100ms;
+    --roll-ease: cubic-bezier(0.32, 0, 0.67, 0);
+  }
+
+  .roll[data-roll='chars'] {
+    --roll-stagger: 50ms;
+    --roll-ease: cubic-bezier(0.11, 0, 0.5, 0);
+  }
+
+  .roll-line {
+    display: block;
+    white-space: pre;
+  }
+
+  .roll-line + .roll-line {
+    position: absolute;
+    inset: 0;
+    padding-block: inherit;
+  }
+
+  .roll .split-piece {
+    display: inline-block;
+    transition: transform 400ms var(--roll-ease);
+    /* From the end: the last piece moves first. */
+    transition-delay: calc((var(--n) - 1 - var(--i)) * var(--roll-stagger) / max(var(--n) - 1, 1));
+  }
+
+  .roll-line + .roll-line .split-piece {
+    transform: translateY(110%);
+  }
+
+  /* The current page's nav link. An underline cannot reach into the
+   * inline-block letters, so the line is drawn on the label instead. */
+  [aria-current='page'] .roll {
+    box-shadow: inset 0 -1px currentColor;
+  }
+
+  /* The sparkle turns half a revolution as the label rolls. 0.7s, power3.out. */
+  .site-button svg {
+    transition: transform 700ms cubic-bezier(0.25, 1, 0.5, 1);
+  }
+
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .roll-host:hover .roll-line:first-child .split-piece {
+      transform: translateY(-110%);
+    }
+    .roll-host:hover .roll-line + .roll-line .split-piece {
+      transform: translateY(0);
+    }
+    .site-button:hover svg {
+      transform: rotate(180deg);
+    }
+  }
+}
+
+/* ------------------------------------------------------------------------
+ * The home page's opening, on load: the wordmark fades in letter by letter,
+ * then the introduction word by word, the mark pops in, the header drops in,
+ * and "Discover" rises last. Times are Webflow's, in seconds from load.
+ * --------------------------------------------------------------------- */
+@layer components {
+  .intro-title,
+  .intro-lead,
+  .intro-discover {
+    /* power3.in: GSAP's power3 is a quartic. */
+    --ease-intro: cubic-bezier(0.5, 0, 0.75, 0);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    /* 0.3s, then 50ms a letter, each over 1s, power3.in. */
+    .intro-title .split-piece {
+      animation: intro-fade 1s var(--ease-intro) both;
+      animation-delay: calc(300ms + var(--i) * 50ms);
+    }
+
+    /* 0.77s, every word within the next second, each over 0.65s, power3.in. */
+    .intro-lead .split-piece {
+      animation: intro-fade 650ms var(--ease-intro) both;
+      animation-delay: calc(770ms + var(--i) * 1000ms / max(var(--n) - 1, 1));
+    }
+
+    /* 1.9s, from nothing, linear (sampled: no overshoot). */
+    .intro-mark {
+      animation: intro-pop 990ms linear 1.9s both;
+    }
+
+    /* 2s, down a rem into place, power2.in. */
+    .intro-header {
+      animation: intro-drop 600ms cubic-bezier(0.32, 0, 0.67, 0) 2s both;
+    }
+
+    /* 2.89s, each letter up out of a mask, power3.in. */
+    .intro-discover .split-piece {
+      display: inline-block;
+      animation: intro-rise 400ms var(--ease-intro) 2.89s both;
+    }
+  }
+
+  .intro-discover {
+    display: inline-block;
+    overflow: hidden;
+    white-space: pre;
+  }
+
+  @keyframes intro-fade {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @keyframes intro-pop {
+    from {
+      transform: scale(0);
+    }
+  }
+
+  @keyframes intro-drop {
+    from {
+      opacity: 0;
+      transform: translateY(-1rem);
+    }
+  }
+
+  @keyframes intro-rise {
+    from {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+  }
+}
+
+/* ------------------------------------------------------------------------
+ * The hero recedes to 90% as it scrolls away, linear, with Webflow's scrub
+ * glide. ScrollProgress writes --scroll-progress over the `exit` range.
+ * --------------------------------------------------------------------- */
+@layer components {
+  .hero-recede[data-scroll-enhanced] {
+    transform: scale(calc(1 - 0.1 * var(--scroll-progress, 0)));
+  }
+}
+
+/* ------------------------------------------------------------------------
+ * Reveal: a statement's words fade in, 20ms apart, the first time it enters
+ * the screen (RevealObserver marks it). Webflow did this to the eyebrow and
+ * statement of each centred heading block.
+ * --------------------------------------------------------------------- */
+@layer components {
+  @media (prefers-reduced-motion: no-preference) {
+    [data-reveal] .split-piece {
+      opacity: 0;
+      transition: opacity 250ms linear;
+      transition-delay: calc(var(--i) * 20ms);
+    }
+
+    [data-reveal='shown'] .split-piece {
+      opacity: 1;
+    }
+  }
+}
+
+/* ------------------------------------------------------------------------
+ * Coming soon: the statement pins while three photographs rise one after
+ * another and settle at an angle.
+ *
+ * Webflow's timeline, over the track from its top meeting the foot of the
+ * screen to its foot meeting the foot of the screen: each photograph rises from
+ * 140vh, turning from ±40° to its resting angle, over 0.25 of a 0.55 timeline,
+ * starting at 0, 0.15 and 0.3, eased in (power1.in, quadratic). Normalised:
+ * each takes 0.4545 of the track, starting at 0, 0.2727 and 0.5455.
+ * ScrollProgress writes --scroll-progress over the `track` range; the stage
+ * and its ease are the rule in src/lib/scroll-progress.ts (stageEased).
+ *
+ * Only a section ScrollProgress has marked is pinned or moved. Without
+ * JavaScript, or under reduced motion, there is no pin and no extra scroll:
+ * the photographs sit stacked at their resting angles.
+ * --------------------------------------------------------------------- */
+@layer components {
+  .coming-soon-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3rem;
+    padding-block: var(--spacing-section);
+  }
+
+  .coming-soon-photos {
+    position: relative;
+    /* 80vh is the Webflow width. The svh term caps the height at 40% of the
+     * screen (16:9, so width 71svh), so the stack fits under the statement in
+     * the pinned panel on a laptop rather than running off the bottom. */
+    width: min(80vh, 88vw, 71svh);
+    aspect-ratio: 16 / 9;
+  }
+
+  .coming-soon-photo {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    border-radius: var(--radius-photo);
+    box-shadow: var(--shadow-photo);
+    transform: rotate(var(--photo-rotate, 0deg));
+  }
+
+  .coming-soon-track[data-scroll-enhanced] {
+    height: 300svh;
+  }
+
+  .coming-soon-track[data-scroll-enhanced] .coming-soon-panel {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    padding-block: 2rem;
+    gap: 2rem;
+  }
+
+  .coming-soon-track[data-scroll-enhanced] .coming-soon-photo {
+    --stage: clamp(0, (var(--scroll-progress, 0) - var(--photo-start)) / 0.4545, 1);
+    --eased: calc(var(--stage) * var(--stage));
+    transform: translateY(calc(140vh * (1 - var(--eased))))
+      rotate(calc(var(--photo-from) + (var(--photo-rotate) - var(--photo-from)) * var(--eased)));
+  }
+
+  .coming-soon-photo:nth-child(1) {
+    --photo-start: 0;
+  }
+
+  .coming-soon-photo:nth-child(2) {
+    --photo-start: 0.2727;
+  }
+
+  .coming-soon-photo:nth-child(3) {
+    --photo-start: 0.5455;
+  }
+}

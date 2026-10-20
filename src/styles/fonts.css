@@ -1,0 +1,28 @@
+/**
+ * Self-hosted fonts. No CDN: a third-party request on every page and, in the
+ * UK, a privacy question.
+ *
+ * Zodiak and Cabinet Grotesk are Fontshare faces from the Indian Type Foundry,
+ * under the ITF Free Font License. These are the variable TTFs exactly as the
+ * Webflow site served them. They are not converted to WOFF2 here: the licence
+ * question about redistributing a converted file is open (AGENTS.md, "Open
+ * questions"), and Fontshare offers official WOFF2 downloads that should
+ * replace these once it is answered.
+ *
+ * Variable, so one file per family covers every weight.
+ */
+@font-face {
+  font-family: 'Zodiak';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/Zodiak-Variable.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Cabinet Grotesk';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/CabinetGrotesk-Variable.ttf') format('truetype');
+}

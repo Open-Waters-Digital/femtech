@@ -1,0 +1,26 @@
+# Postgres for local development, and nothing else. The app runs on the host
+# with `pnpm run dev`.
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: femtech
+      POSTGRES_PASSWORD: femtech
+      POSTGRES_DB: femtech
+    ports:
+      # 5435 on the host, bound to loopback. Not 5432, because a Postgres.app on
+      # the same machine binds loopback explicitly and wins over Docker's wildcard,
+      # so localhost:5432 silently reaches the wrong server. Not 5433 or 5434,
+      # which the sibling Open Waters projects already use.
+      - '127.0.0.1:5435:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U femtech']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:

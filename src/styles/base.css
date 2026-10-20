@@ -1,0 +1,114 @@
+/**
+ * The accessibility and motion floor, set once so no component has to remember.
+ */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    color-scheme: light;
+    -webkit-text-size-adjust: 100%;
+    /* `pretty` everywhere; short blocks opt into `balance` where written. */
+    text-wrap: pretty;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    font-family: var(--font-body);
+    font-weight: 400;
+    font-size: var(--text-base);
+    line-height: var(--leading-normal);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 400;
+    line-height: var(--leading-tight);
+    text-wrap: balance;
+  }
+
+  p {
+    margin: 0;
+  }
+
+  img,
+  picture,
+  video,
+  svg {
+    display: block;
+    max-width: 100%;
+  }
+
+  a {
+    color: inherit;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+
+  /* :focus-visible, so a mouse click leaves no ring while the keyboard always
+   * shows one. The colour swaps on dark grounds (`ground-dark`). */
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 3px;
+  }
+
+  :where(button, [role='button'], a[href], summary, label[for], select):not(:disabled) {
+    cursor: pointer;
+  }
+
+  a,
+  button,
+  [role='button'] {
+    touch-action: manipulation;
+  }
+
+  /* Comfortable touch targets. */
+  :where(button, [role='button'], input:not([type='checkbox']), select, textarea) {
+    min-height: 44px;
+  }
+
+  /* An anchor jumped to sits clear of the header rather than under it. */
+  :target {
+    scroll-margin-top: var(--spacing-header);
+  }
+}
+
+/**
+ * Motion suppressed globally rather than per animation, so a new component
+ * cannot forget. A near-zero duration rather than `none`, because some
+ * transitions fire completion events. Delays go to zero too: an entrance that
+ * waits two seconds to appear holds the content invisible for those seconds,
+ * however short the animation itself.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+}

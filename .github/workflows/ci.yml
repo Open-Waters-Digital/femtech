@@ -1,0 +1,96 @@
+# The quality gate, mirrored in CI, plus a container job so a Dockerfile
+# regression fails here rather than on deploy.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: femtech
+          POSTGRES_PASSWORD: femtech
+          POSTGRES_DB: femtech
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U femtech"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # The build itself needs no database. This one exists so every committed
+      # migration is applied to a clean database on every push.
+      DATABASE_URL: postgres://femtech:femtech@localhost:5432/femtech
+      PAYLOAD_SECRET: ci-only-secret-not-used-anywhere-real-0000
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.2
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Apply migrations to a clean database
+        run: pnpm run migrate
+      - name: Quality gate
+        run: pnpm run ci:quality
+      - name: Fail if the generated types are stale
+        run: |
+          pnpm run generate:types
+          git diff --exit-code src/payload-types.ts
+
+  container:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: femtech
+          POSTGRES_PASSWORD: femtech
+          POSTGRES_DB: femtech
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U femtech"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build the image, with no database available to the build
+        run: docker build --build-arg NEXT_PUBLIC_SITE_URL=http://localhost:3000 -t femtech:ci .
+      - name: Run the release command from inside the image
+        run: |
+          docker run --rm \
+            -e DATABASE_URL=postgres://femtech:femtech@172.17.0.1:5432/femtech \
+            -e PAYLOAD_SECRET=ci-only-secret-not-used-anywhere-real-0000 \
+            femtech:ci node_modules/.bin/payload migrate
+      - name: Boot it and curl the health path and a page
+        run: |
+          docker run -d --name ci-site -p 3000:3000 \
+            -e DATABASE_URL=postgres://femtech:femtech@172.17.0.1:5432/femtech \
+            -e PAYLOAD_SECRET=ci-only-secret-not-used-anywhere-real-0000 \
+            -e NEXT_PUBLIC_SITE_URL=http://localhost:3000 \
+            femtech:ci
+          for i in $(seq 1 30); do
+            if curl -fs http://localhost:3000/health > /dev/null; then
+              echo "healthy after ${i}s"
+              curl -fs -o /dev/null http://localhost:3000/sign-up
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs ci-site
+          exit 1

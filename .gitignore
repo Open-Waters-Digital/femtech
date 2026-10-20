@@ -1,0 +1,39 @@
+# dependencies
+node_modules/
+
+# builds
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# test output
+coverage/
+test-results/
+playwright-report/
+
+# Local uploads. Without S3 configured, Payload writes each upload collection's
+# files to a directory named after its slug at the repository root.
+/media/
+/videos/
+
+# The Webflow export this site was rebuilt from, kept beside the repo as a
+# reference. The assets the site uses are copied into scripts/seed-assets.
+/femtech-9ce3f2.webflow/
+/femtech-9ce3f2.webflow.zip
+/tanya-hero.webp
+
+# Secrets. The committed template is env.example.
+.env
+.env.*
+
+# platform
+.railway/plan.json
+
+# os and editor
+.DS_Store
+*.pem
+npm-debug.log*
+.idea/

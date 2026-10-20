@@ -1,0 +1,31 @@
+/**
+ * The admin, in the site's palette.
+ *
+ * Payload exposes its theme as CSS variables, so this is a remap rather than a
+ * set of overrides. The values restate tokens.css as literals, because this
+ * stylesheet is outside the Tailwind @theme cascade and cannot read it. If the
+ * palette changes, change this by hand: the no-hex lint rule covers .ts and
+ * .tsx only.
+ */
+:root {
+  /* The cream to ink ramp, lightest to darkest. */
+  --theme-elevation-0: #ffffff;
+  --theme-elevation-50: #f7f1e8;
+  --theme-elevation-100: #efe5d7;
+  --theme-elevation-150: #e8ddcc;
+  --theme-elevation-200: #ddd2c1;
+  --theme-elevation-250: #d1c5af;
+  --theme-elevation-300: #c9bfb1;
+  --theme-elevation-400: #a8a094;
+  --theme-elevation-500: #857a6c;
+  --theme-elevation-600: #665c50;
+  --theme-elevation-700: #4d453c;
+  --theme-elevation-800: #2e2924;
+  --theme-elevation-900: #171411;
+  --theme-elevation-1000: #0d0b09;
+  --theme-bg: #f7f1e8;
+  --theme-input-bg: #ffffff;
+  --theme-text: #171411;
+  --theme-success-500: #3f6228;
+  --theme-error-500: #8c3a30;
+}
