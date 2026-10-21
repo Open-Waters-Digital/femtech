@@ -11,6 +11,7 @@ export const CACHE_TAGS = {
   site: 'site-settings',
   home: 'home',
   about: 'about',
+  events: 'events',
 } as const
 
 /**
@@ -38,9 +39,10 @@ function invalidate(run: () => void): void {
 }
 
 /**
- * Everything at once. The site has three pages, every one of them reads site
- * settings in its layout, and media appears across all three, so working out
- * which page a change touched would save nothing worth the code.
+ * Everything at once. Every page reads site settings in its layout, media
+ * appears across all of them, and an event shows on /events, its own page and
+ * the sitemap, so working out which page a change touched would save nothing
+ * worth the code.
  */
 export function revalidateSite(): void {
   invalidate(() => {

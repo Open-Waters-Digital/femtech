@@ -43,6 +43,8 @@ export default defineRailway(() => {
       RESEND_API_KEY: preserve(),
       SIGNUP_FROM_EMAIL: preserve(),
       SIGNUP_NOTIFY_EMAIL: preserve(),
+      TURNSTILE_SITE_KEY: preserve(),
+      TURNSTILE_SECRET_KEY: preserve(),
       S3_ACCESS_KEY_ID: preserve(),
       S3_SECRET_ACCESS_KEY: preserve(),
       S3_BUCKET: preserve(),

@@ -41,6 +41,15 @@ export const SiteSettings: GlobalConfig = {
             },
             { name: 'footerCtaLabel', type: 'text', required: true },
             {
+              name: 'contactEmail',
+              label: 'Public contact email',
+              type: 'email',
+              admin: {
+                description:
+                  'Optional. Given on a hosted event’s page to visitors without JavaScript, who cannot use the RSVP form.',
+              },
+            },
+            {
               name: 'copyrightHolder',
               type: 'text',
               required: true,

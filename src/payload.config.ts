@@ -5,6 +5,8 @@ import { buildConfig } from 'payload'
 import sharp from 'sharp'
 import { fileURLToPath } from 'url'
 
+import { EventRegistrations } from './collections/EventRegistrations'
+import { Events } from './collections/Events'
 import { Media } from './collections/Media'
 import { Members } from './collections/Members'
 import { Users } from './collections/Users'
@@ -33,7 +35,7 @@ export default buildConfig({
       robots: { index: false, follow: false },
     },
   },
-  collections: [Members, Media, Videos, Users],
+  collections: [Members, Events, EventRegistrations, Media, Videos, Users],
   globals: [Home, About, SiteSettings],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',

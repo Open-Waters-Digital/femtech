@@ -2,15 +2,15 @@
  * The site's navigation, defined once for the header, the mobile menu and the
  * footer.
  *
- * `href: null` is an item announced but not yet live. The Webflow site linked
- * "Events (coming soon)" to `#`, a link that goes nowhere; here it is text, so
- * nobody clicks it expecting a page.
+ * `href: null` is an item announced but not yet live: text rather than a link,
+ * so nobody clicks it expecting a page. The Webflow site linked "Events (coming
+ * soon)" to `#`; Events has been a page since 20 October 2026.
  */
 export type NavItem = { label: string; href: string | null }
 
 export const NAV_ITEMS: readonly NavItem[] = [
   { label: 'About Us', href: '/about-us' },
-  { label: 'Events (coming soon)', href: null },
+  { label: 'Events', href: '/events' },
 ]
 
 export const SIGN_UP_PATH = '/sign-up'

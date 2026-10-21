@@ -68,6 +68,8 @@ export interface Config {
   blocks: {};
   collections: {
     members: Member;
+    events: Event;
+    'event-registrations': EventRegistration;
     media: Media;
     videos: Video;
     users: User;
@@ -76,9 +78,15 @@ export interface Config {
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
   };
-  collectionsJoins: {};
+  collectionsJoins: {
+    events: {
+      registrations: 'event-registrations';
+    };
+  };
   collectionsSelect: {
     members: MembersSelect<false> | MembersSelect<true>;
+    events: EventsSelect<false> | EventsSelect<true>;
+    'event-registrations': EventRegistrationsSelect<false> | EventRegistrationsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     videos: VideosSelect<false> | VideosSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
@@ -170,6 +178,152 @@ export interface Member {
    * Whether the team was emailed about this sign-up.
    */
   notification?: ('sent' | 'failed' | 'unconfigured' | 'skipped') | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Speaking engagements (someone from the network at another organiser’s event) and the network’s own hosted events, which take RSVPs. Only published events appear on the site.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "events".
+ */
+export interface Event {
+  id: number;
+  title: string;
+  kind: 'speaking' | 'hosted';
+  /**
+   * Only published events are listed. A cancelled hosted event says so on its page.
+   */
+  status: 'draft' | 'published' | 'cancelled';
+  /**
+   * The address: /events/<slug>. Made from the title if left empty.
+   */
+  slug?: string | null;
+  startsAt: string;
+  startsAt_tz:
+    | 'Europe/London'
+    | 'Europe/Dublin'
+    | 'Europe/Amsterdam'
+    | 'Europe/Paris'
+    | 'Europe/Berlin'
+    | 'Europe/Madrid'
+    | 'Europe/Stockholm'
+    | 'Asia/Dubai'
+    | 'Asia/Riyadh'
+    | 'Asia/Kolkata'
+    | 'Asia/Singapore'
+    | 'Australia/Sydney'
+    | 'America/New_York'
+    | 'America/Chicago'
+    | 'America/Los_Angeles'
+    | 'America/Toronto';
+  /**
+   * Optional. Set it for an event over several days.
+   */
+  endsAt?: string | null;
+  endsAt_tz?:
+    | (
+        | 'Europe/London'
+        | 'Europe/Dublin'
+        | 'Europe/Amsterdam'
+        | 'Europe/Paris'
+        | 'Europe/Berlin'
+        | 'Europe/Madrid'
+        | 'Europe/Stockholm'
+        | 'Asia/Dubai'
+        | 'Asia/Riyadh'
+        | 'Asia/Kolkata'
+        | 'Asia/Singapore'
+        | 'Australia/Sydney'
+        | 'America/New_York'
+        | 'America/Chicago'
+        | 'America/Los_Angeles'
+        | 'America/Toronto'
+      )
+    | null;
+  /**
+   * For engagements known by their dates only, such as a two-day summit.
+   */
+  allDay?: boolean | null;
+  venue?: string | null;
+  city?: string | null;
+  country?: string | null;
+  /**
+   * Shown as "Online" in place of a venue.
+   */
+  online?: boolean | null;
+  /**
+   * Who from the network is speaking.
+   */
+  speakers?:
+    | {
+        name: string;
+        role: 'keynote' | 'panel' | 'talk' | 'tbc';
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Leave empty and the site says "Topic to be confirmed".
+   */
+  sessionTitle?: string | null;
+  /**
+   * Where to book or read more, on the organiser’s site. Optional: without it the event is listed but not linked.
+   */
+  organiserUrl?: string | null;
+  /**
+   * One or two lines for the listing.
+   */
+  summary?: string | null;
+  /**
+   * Confirmed RSVPs, against the capacity below. Withdrawals do not count.
+   */
+  confirmedPlaces?: number | null;
+  /**
+   * Everyone who has RSVPd, including withdrawals. Filter by status in the list.
+   */
+  registrations?: {
+    docs?: (number | EventRegistration)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  /**
+   * The event’s page. Paragraphs on blank lines.
+   */
+  description?: string | null;
+  image?: (number | null) | Media;
+  /**
+   * Places available. Empty for no limit.
+   */
+  capacity?: number | null;
+  /**
+   * Optional. Otherwise RSVP closes when the event starts.
+   */
+  rsvpClosesAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Places reserved at the network’s own events. Withdrawn places are kept, marked withdrawn, and no longer count.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "event-registrations".
+ */
+export interface EventRegistration {
+  id: number;
+  event: number | Event;
+  firstName: string;
+  lastName: string;
+  email: string;
+  status: 'confirmed' | 'withdrawn';
+  withdrawnAt?: string | null;
+  /**
+   * The member with the same email address, if there is one.
+   */
+  member?: (number | null) | Member;
+  /**
+   * Whether their confirmation email went. Re-sent on a repeat RSVP.
+   */
+  confirmation?: ('sent' | 'failed' | 'unconfigured' | 'skipped') | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -295,6 +449,14 @@ export interface PayloadLockedDocument {
         value: number | Member;
       } | null)
     | ({
+        relationTo: 'events';
+        value: number | Event;
+      } | null)
+    | ({
+        relationTo: 'event-registrations';
+        value: number | EventRegistration;
+      } | null)
+    | ({
         relationTo: 'media';
         value: number | Media;
       } | null)
@@ -364,6 +526,59 @@ export interface MembersSelect<T extends boolean = true> {
   emailUpdates?: T;
   status?: T;
   notification?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "events_select".
+ */
+export interface EventsSelect<T extends boolean = true> {
+  title?: T;
+  kind?: T;
+  status?: T;
+  slug?: T;
+  startsAt?: T;
+  startsAt_tz?: T;
+  endsAt?: T;
+  endsAt_tz?: T;
+  allDay?: T;
+  venue?: T;
+  city?: T;
+  country?: T;
+  online?: T;
+  speakers?:
+    | T
+    | {
+        name?: T;
+        role?: T;
+        id?: T;
+      };
+  sessionTitle?: T;
+  organiserUrl?: T;
+  summary?: T;
+  confirmedPlaces?: T;
+  registrations?: T;
+  description?: T;
+  image?: T;
+  capacity?: T;
+  rsvpClosesAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "event-registrations_select".
+ */
+export interface EventRegistrationsSelect<T extends boolean = true> {
+  event?: T;
+  firstName?: T;
+  lastName?: T;
+  email?: T;
+  status?: T;
+  withdrawnAt?: T;
+  member?: T;
+  confirmation?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -630,6 +845,10 @@ export interface SiteSetting {
   footerHeading: string;
   footerCtaLabel: string;
   /**
+   * Optional. Given on a hosted event’s page to visitors without JavaScript, who cannot use the RSVP form.
+   */
+  contactEmail?: string | null;
+  /**
    * Shown as "© <this> <year>".
    */
   copyrightHolder: string;
@@ -763,6 +982,7 @@ export interface AboutSelect<T extends boolean = true> {
 export interface SiteSettingsSelect<T extends boolean = true> {
   footerHeading?: T;
   footerCtaLabel?: T;
+  contactEmail?: T;
   copyrightHolder?: T;
   signupEyebrow?: T;
   signupTitle?: T;

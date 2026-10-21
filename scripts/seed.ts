@@ -330,11 +330,90 @@ async function seedAbout(payload: Payload): Promise<void> {
   console.log('about: written')
 }
 
+/**
+ * Tanya's speaking engagements as supplied on 20 October 2026. Each is written
+ * once, keyed on its slug, and never overwritten: an editor's correction (a
+ * confirmed topic, a venue) must survive a re-seed.
+ *
+ * Revive ME's dates and venue come from secondary listings and its organiser
+ * URL was not supplied, so it is listed without a link. Service Next Medical's
+ * keynote topic is to be confirmed by its organisers.
+ */
+const SPEAKING_ENGAGEMENTS = [
+  {
+    title: 'Field Service Europe 2026',
+    slug: 'field-service-europe-2026',
+    startsAt: '2026-10-26T10:40:00.000Z',
+    startsAt_tz: 'Europe/Amsterdam',
+    allDay: false,
+    city: 'Amsterdam',
+    country: 'Netherlands',
+    speakers: [{ name: 'Tanya AH Singh', role: 'panel' }],
+    sessionTitle:
+      'Panel: Evolving the Service Value Proposition to Turn Capability into Scalable Growth',
+    organiserUrl: 'https://fieldserviceeu.wbresearch.com/speakers/tanya-singh',
+  },
+  {
+    title: 'Revive ME Global Longevity & Health Tech Summit',
+    slug: 'revive-me-2026',
+    // 09:00 and 18:00 in Abu Dhabi; shown as dates only.
+    startsAt: '2026-11-11T05:00:00.000Z',
+    startsAt_tz: 'Asia/Dubai',
+    endsAt: '2026-11-12T14:00:00.000Z',
+    endsAt_tz: 'Asia/Dubai',
+    allDay: true,
+    venue: 'ADNEC',
+    city: 'Abu Dhabi',
+    country: 'United Arab Emirates',
+    speakers: [{ name: 'Tanya AH Singh', role: 'tbc' }],
+    summary: 'UAE’s Premier Longevity And Health Tech Exhibition & Conference',
+  },
+  {
+    title: 'Service Next Medical 2027',
+    slug: 'service-next-medical-2027',
+    // 09:00 on 1 March to 17:00 on 3 March in Carlsbad; shown as dates only.
+    startsAt: '2027-03-01T17:00:00.000Z',
+    startsAt_tz: 'America/Los_Angeles',
+    endsAt: '2027-03-04T01:00:00.000Z',
+    endsAt_tz: 'America/Los_Angeles',
+    allDay: true,
+    venue: 'Westin Carlsbad Resort & Spa',
+    city: 'Carlsbad, California',
+    country: 'United States',
+    speakers: [{ name: 'Tanya AH Singh', role: 'keynote' }],
+    organiserUrl: 'https://servicenextmedical.wbresearch.com',
+  },
+] as const
+
+async function seedEvents(payload: Payload): Promise<void> {
+  for (const event of SPEAKING_ENGAGEMENTS) {
+    const existing = await payload.count({
+      collection: 'events',
+      where: { slug: { equals: event.slug } },
+    })
+    if (existing.totalDocs > 0) {
+      console.log(`events: ${event.slug} exists, skipped`)
+      continue
+    }
+    await payload.create({
+      collection: 'events',
+      data: {
+        ...event,
+        speakers: event.speakers.map((speaker) => ({ ...speaker })),
+        kind: 'speaking',
+        status: 'published',
+      },
+    })
+    console.log(`events: ${event.slug} written`)
+  }
+}
+
 const payload = await getPayload({ config })
 await seedAdmin(payload)
 await seedSiteSettings(payload)
 await seedSignupCopy(payload)
 await seedHome(payload)
 await seedAbout(payload)
+await seedEvents(payload)
 console.log('seed: done')
 process.exit(0)

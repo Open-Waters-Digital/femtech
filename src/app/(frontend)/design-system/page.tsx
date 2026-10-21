@@ -1,6 +1,9 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 
+import { EventCard } from '@/components/events/EventCard'
+import { RsvpFormView } from '@/components/events/RsvpFormView'
+import { SAMPLE_EVENTS } from '@/components/events/fixtures'
 import { SiteHeader } from '@/components/layout/SiteHeader'
 import { Button } from '@/components/primitives/Button'
 import { Container } from '@/components/primitives/Container'
@@ -346,6 +349,70 @@ export default function DesignSystemPage() {
               <Sparkle className="size-3" />
               <Sparkle className="size-6 text-ornament" />
               <Sparkle className="size-12 text-text-sage" />
+            </Row>
+          </ShowcaseSection>
+
+          <ShowcaseSection title="EventCard" path="@/components/events/EventCard">
+            <Row axis="speaking: linked to the organiser (tab to it for the focus ring); not yet linked, topic and role TBC, all-day range">
+              <div className="grid w-full gap-6 md:grid-cols-2">
+                <EventCard event={SAMPLE_EVENTS.speaking} />
+                <EventCard event={SAMPLE_EVENTS.speakingNoLink} />
+              </div>
+            </Row>
+            <Row axis="hosted: badge open, full, closed, cancelled; online with two speakers">
+              <div className="grid w-full gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <EventCard event={SAMPLE_EVENTS.hosted} badge="open" />
+                <EventCard event={SAMPLE_EVENTS.hosted} badge="full" />
+                <EventCard event={SAMPLE_EVENTS.hosted} badge="closed" />
+                <EventCard event={SAMPLE_EVENTS.hosted} badge="cancelled" />
+                <EventCard event={SAMPLE_EVENTS.online} badge="open" />
+              </div>
+            </Row>
+            <Row axis="past">
+              <div className="grid w-full gap-6 md:grid-cols-2">
+                <EventCard event={SAMPLE_EVENTS.past} past />
+              </div>
+            </Row>
+          </ShowcaseSection>
+
+          <ShowcaseSection
+            title="RsvpForm"
+            path="@/components/events/RsvpForm (client), RsvpFormView (every state)"
+          >
+            <Row axis="editing; field errors; sending; Turnstile failed; confirmed. In the page, the Turnstile widget mounts where the placeholder is">
+              <div className="grid w-full gap-8 md:grid-cols-2 lg:grid-cols-3">
+                <div className="rounded-frame bg-surface-raised p-6">
+                  <RsvpFormView status={{ kind: 'editing' }} dwellToken="" />
+                </div>
+                <div className="rounded-frame bg-surface-raised p-6">
+                  <RsvpFormView
+                    status={{ kind: 'editing' }}
+                    errors={{
+                      firstName: 'Please tell us your first name.',
+                      email: 'Please enter a valid email address.',
+                    }}
+                    dwellToken=""
+                  />
+                </div>
+                <div className="rounded-frame bg-surface-raised p-6">
+                  <RsvpFormView status={{ kind: 'sending' }} dwellToken="" />
+                </div>
+                <div className="rounded-frame bg-surface-raised p-6">
+                  <RsvpFormView
+                    status={{
+                      kind: 'failed',
+                      message: 'Please complete the check above the button and try again.',
+                    }}
+                    dwellToken=""
+                  />
+                </div>
+                <div className="rounded-frame bg-surface-raised p-6">
+                  <RsvpFormView
+                    status={{ kind: 'confirmed', email: 'ada@example.com' }}
+                    dwellToken=""
+                  />
+                </div>
+              </div>
             </Row>
           </ShowcaseSection>
 

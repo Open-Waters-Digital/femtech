@@ -206,3 +206,49 @@ export function checkboxRowClasses(state: FieldState): string {
 }
 
 export const CHECKBOX_INPUT_CLASSES = 'mt-0.5 size-5 shrink-0 cursor-pointer accent-surface-inverse'
+
+/* ------------------------------------------------------------------------
+ * EventCard and its badge
+ * --------------------------------------------------------------------- */
+
+/** Past events stay listed but step back: no raised ground, muted ink. */
+export type EventCardTiming = 'upcoming' | 'past'
+
+const EVENT_CARD_TIMINGS: Record<EventCardTiming, string> = {
+  upcoming: 'bg-surface-raised text-text',
+  past: 'bg-transparent text-text-muted',
+}
+
+/**
+ * `relative` so the title's link can stretch over the whole card (its ::after
+ * covers it), while the focus ring stays on the title where it can be read.
+ * Hover lifts the edge only when there is somewhere to go.
+ */
+const EVENT_CARD_BASE =
+  'relative flex h-full flex-col gap-4 rounded-frame border border-line p-6 md:p-8 ' +
+  'transition-colors duration-base ease-out'
+
+const EVENT_CARD_LINKED = 'hover:border-line-strong'
+
+export function eventCardClasses(timing: EventCardTiming, linked: boolean): string {
+  return [EVENT_CARD_BASE, EVENT_CARD_TIMINGS[timing], linked ? EVENT_CARD_LINKED : '']
+    .filter(Boolean)
+    .join(' ')
+}
+
+/** Whether a hosted event takes RSVPs, and a cancelled event's mark. */
+export type EventBadge = 'open' | 'full' | 'closed' | 'cancelled'
+
+const EVENT_BADGE_BASE =
+  'inline-flex items-center rounded-full border px-3 py-1 font-body text-xs font-medium'
+
+const EVENT_BADGES: Record<EventBadge, string> = {
+  open: 'border-success text-success',
+  full: 'border-line-strong text-text-muted',
+  closed: 'border-line-strong text-text-muted',
+  cancelled: 'border-danger text-danger',
+}
+
+export function eventBadgeClasses(badge: EventBadge): string {
+  return [EVENT_BADGE_BASE, EVENT_BADGES[badge]].join(' ')
+}
