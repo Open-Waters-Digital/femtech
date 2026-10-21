@@ -1,5 +1,12 @@
-import { Resend } from 'resend'
-
+import {
+  type Message,
+  type NotifyResult,
+  type Send,
+  plain,
+  resendSender,
+  safe,
+  sendWithTimeout,
+} from '@/lib/email'
 import { type Signup, industryLabel } from '@/lib/signup/schema'
 import { isIndexable, siteUrl } from '@/lib/site-env'
 
@@ -13,41 +20,10 @@ import { isIndexable, siteUrl } from '@/lib/site-env'
  * are joining.
  */
 
-export type NotifyResult = 'sent' | 'skipped' | 'unconfigured' | 'failed'
-
-export type Message = {
-  from: string
-  to: string[]
-  replyTo: string
-  subject: string
-  html: string
-  text: string
-}
-
-export type Send = (message: Message) => Promise<{ error: unknown }>
+export type { Message, NotifyResult, Send } from '@/lib/email'
+export { safe } from '@/lib/email'
 
 const TIMEOUT_MS = 8_000
-
-/**
- * Escapes HTML and strips CR and LF. The line breaks matter more than the angle
- * brackets: a newline in a value that reaches a header turns the subject line
- * into a header-injection vector.
- */
-export function safe(value: string): string {
-  return value
-    .replace(/[\r\n]+/g, ' ')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-    .trim()
-}
-
-/** The same, for the plain-text part, where only the line breaks are a hazard. */
-function plain(value: string): string {
-  return value.replace(/[\r\n]+/g, ' ').trim()
-}
 
 /** SIGNUP_NOTIFY_EMAIL may name several people, separated by commas. */
 export function recipients(raw: string | undefined): string[] {
@@ -108,13 +84,6 @@ export function buildMessage(
   }
 }
 
-const resendSender =
-  (apiKey: string): Send =>
-  async (message) => {
-    const { error } = await new Resend(apiKey).emails.send(message)
-    return { error }
-  }
-
 /**
  * Email the team. `send` is a seam for tests; without it, Resend is used when
  * all three settings are present.
@@ -131,17 +100,7 @@ export async function notifyTeam(
   const sender = send ?? (apiKey && from && to.length > 0 ? resendSender(apiKey) : null)
   if (!sender) return isIndexable() ? 'unconfigured' : 'skipped'
 
-  try {
-    // Every outbound call gets a timeout. A hung mail provider must not hang
-    // the visitor's request; the member is already saved.
-    const { error } = await Promise.race([
-      sender(buildMessage(member, { from, to, repeat })),
-      new Promise<{ error: unknown }>((resolve) =>
-        setTimeout(() => resolve({ error: 'timeout' }), TIMEOUT_MS),
-      ),
-    ])
-    return error ? 'failed' : 'sent'
-  } catch {
-    return 'failed'
-  }
+  // Every outbound call gets a timeout. A hung mail provider must not hang
+  // the visitor's request; the member is already saved.
+  return sendWithTimeout(sender, buildMessage(member, { from, to, repeat }), TIMEOUT_MS)
 }
