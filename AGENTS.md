@@ -221,6 +221,7 @@ src/
       health/              liveness probe for Docker and Railway
     (payload)/             Payload's admin and API (generated; custom.css is ours)
     robots.ts, sitemap.ts  must sit at the app root to be picked up
+  proxy.ts                 the Content Security Policy, with a nonce per request
   collections/             Members, Events, EventRegistrations, Media, Videos,
                            Users
   globals/                 Home, About, SiteSettings: all page copy
@@ -245,6 +246,7 @@ src/
                            closed rule), reserve (the lock and transaction),
                            turnstile, withdraw-token, withdraw, confirm (email)
     email.ts               message shape, escaping and timeout for every email
+    security-headers.ts    the CSP and the fixed security headers
     dwell-token.ts, rate-limit.ts   sign-up defences
     scroll-progress.ts     scroll ranges and the scrub glide, for ScrollProgress
     revalidate.ts, uploads.ts, storage.ts, site-env.ts, text.ts
@@ -387,6 +389,9 @@ form cannot reveal who is attending.
   announced letter by letter.
 - Every CMS image goes through `PayloadImage` (dimensions from the document,
   focal point honoured). Only the hero poster is `preload`.
+- The CSP refuses any script it does not know: a new third-party script, or
+  anything that needs eval, needs a change to `lib/security-headers.ts` and a
+  reason. Zod runs `jitless` for the same reason.
 - One third-party script: Cloudflare Turnstile, on hosted event pages only,
   loaded by `RsvpForm` once it is on screen. Otherwise none until analytics,
   which loads after the
@@ -502,9 +507,17 @@ Types: `feat`, `fix`, `refactor`, `perf`, `docs`, `test`, `build`, `ci`,
   against a real inbox. A notification in spam is a lost sign-up.
 - 🧱 **Error tracking with alerting.** A silently broken form is a silently
   lost list. At minimum, alert on `[join]` errors in the Railway logs.
-- 🧱 **Security headers and a CSP**, including the analytics proxy host and
-  `https://challenges.cloudflare.com` in `script-src` and `frame-src`
-  (Turnstile).
+- ✅ **Security headers and a CSP.** The policy is built per request in
+  `src/proxy.ts` with a fresh nonce (`lib/security-headers.ts`): scripts by
+  nonce and `'strict-dynamic'` only, no inline script and no eval in a build;
+  inline styles allowed, because the markup's style attributes are deliberate;
+  Turnstile (`https://challenges.cloudflare.com`) in `script-src` and
+  `frame-src`; everything else from this origin. HSTS (no `includeSubDomains`:
+  the Microsoft 365 names are not ours to promise https for), nosniff,
+  Referrer-Policy and Permissions-Policy are set in `next.config.ts`. Checked
+  in a production build across the public pages and the admin with no
+  violations. **The analytics proxy host must be added when analytics lands**
+  (delivery item 11), or it will be blocked.
 - 🧱 **Remove the service's `*.up.railway.app` address** once the domain is
   live. Behind Cloudflare, `clientIp` trusts `cf-connecting-ip`; a request
   straight to Railway could forge it and sidestep the rate limits. Remove the

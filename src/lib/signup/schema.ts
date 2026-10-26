@@ -1,5 +1,12 @@
 import { z } from 'zod'
 
+// No compiled validators. Zod otherwise probes `new Function` to see whether it
+// may compile them; the Content Security Policy refuses eval, so in a browser
+// every form page logged a violation before Zod fell back. Set here because
+// every schema in the app imports this module (the RSVP schema reuses its
+// limits), so it runs before any of them parses.
+z.config({ jitless: true })
+
 /**
  * A sign-up, as the form sends it. One schema, read by the form before it posts
  * and by /join before it writes, so the two cannot disagree about what is valid.
