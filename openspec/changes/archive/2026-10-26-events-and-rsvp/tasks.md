@@ -22,16 +22,16 @@
 - [x] 3.4 Add `lib/events/withdraw-token.ts` (domain-separated HMAC, `timingSafeEqual`); verify with tests for round-trip, tampered ID, tampered signature, another secret, a dwell token presented as a withdraw token, and malformed input
 - [x] 3.5 Add `lib/events/rsvp-schema.ts` and `POST /events/[slug]/rsvp` (layers in the design's order, open check, per-event mutex and transaction, repeat and reactivate rules, member link, JSON only); verify with route tests for every layer's rejection, a full event, a closed event, a cancelled event, a repeat that changes nothing, a reactivation, and two concurrent requests for the last place confirming exactly one
 - [x] 3.6 Add `lib/events/confirm.ts` (registrant only, HTML and text, escaped values, subject without line breaks, 10 s timeout, result written to `confirmation` in `after()`); verify with tests for escaping, header injection, timeout, unconfigured production, and that the withdraw link carries a valid token
-- [ ] 3.7 Add the client component `RsvpForm` (Field primitives, Turnstile mounted explicitly, focus on the first error, confirmation in place) and the `<noscript>` block with `contactEmail`; add the form's states (editing, error, sending, confirmed, Turnstile failed) to `/design-system`; verify in a running build at 390px then desktop with the Turnstile test keys, and with JavaScript disabled
+- [x] 3.7 Add the client component `RsvpForm` (Field primitives, Turnstile mounted explicitly, focus on the first error, confirmation in place) and the `<noscript>` block with `contactEmail`; add the form's states (editing, error, sending, confirmed, Turnstile failed) to `/design-system`; verify in a running build at 390px then desktop with the Turnstile test keys, and with JavaScript disabled
 
 ## 4. Withdraw
 
-- [ ] 4.1 Add `app/(frontend)/events/withdraw/page.tsx` (GET shows the event and a Withdraw button, or "not valid", or "already passed"; noindex) and its `POST` route (marks withdrawn, sets `withdrawnAt`, idempotent); verify with tests that GET changes nothing and that a tampered token changes nothing, and by withdrawing from a real confirmation email locally and seeing the place freed on the event page
+- [x] 4.1 Add `app/(frontend)/events/withdraw/page.tsx` (GET shows the event and a Withdraw button, or "not valid", or "already passed"; noindex) and its `POST` route (marks withdrawn, sets `withdrawnAt`, idempotent); verify with tests that GET changes nothing and that a tampered token changes nothing, and by withdrawing from a real confirmation email locally and seeing the place freed on the event page
 
 ## 5. Integration and documentation
 
-- [ ] 5.1 Sweep `AGENTS.md`: Events in the feature scope and the delivery order, the repo tree, the client components list (`RsvpForm`), the RSVP path beside the sign-up path, privacy (registrations, Turnstile), the pre-launch hardening (Turnstile host in the CSP; the per-event mutex under "before raising replicas"), the backlog (welcome email now unblocked by Turnstile), and the open questions from the design
-- [ ] 5.2 Run `pnpm run ci:quality` and report its real output; in a running build, walk RSVP → confirmation email → withdraw → RSVP again end to end at 390px then desktop, and confirm the admin counts at each step
+- [x] 5.1 Sweep `AGENTS.md`: Events in the feature scope and the delivery order, the repo tree, the client components list (`RsvpForm`), the RSVP path beside the sign-up path, privacy (registrations, Turnstile), the pre-launch hardening (Turnstile host in the CSP; the per-event mutex under "before raising replicas"), the backlog (welcome email now unblocked by Turnstile), and the open questions from the design
+- [x] 5.2 Run `pnpm run ci:quality` and report its real output; in a running build, walk RSVP → confirmation email → withdraw → RSVP again end to end at 390px then desktop, and confirm the admin counts at each step
 
 ## Workflow follow-up
 

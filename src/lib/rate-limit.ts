@@ -56,12 +56,30 @@ export function resetRateLimit(): void {
   windows.clear()
 }
 
+/** An IPv4 or IPv6 address, loosely: enough to refuse a header stuffed with anything else. */
+const ADDRESS = /^[0-9a-fA-F:.]{2,45}$/
+
 /**
- * Railway sits behind a proxy, so the socket address is the proxy's. The
- * left-most entry in x-forwarded-for is the client; anything after it was
- * appended by an intermediary.
+ * The visitor's address, for keying the rate limit and for Turnstile.
+ *
+ * Behind Cloudflare (since 26 October 2026), `cf-connecting-ip` comes first.
+ * Cloudflare sets it from the connection it received and overwrites any value
+ * the visitor sent, so it cannot be forged through Cloudflare.
+ * `x-forwarded-for` can: Cloudflare appends to whatever the visitor sent rather
+ * than replacing it, so its left-most entry is the visitor's to choose, and a
+ * new value per request would sidestep the limit entirely.
+ *
+ * `x-forwarded-for` remains the fallback for requests that reach Railway
+ * without Cloudflare (local development, and the service's own *.up.railway.app
+ * address). There `cf-connecting-ip` could be forged too, which is why the
+ * Railway address is to be removed once the domain is live (AGENTS.md,
+ * "Pre-launch hardening"). The limit is a backstop either way: the honeypot,
+ * the dwell token, the schema and, for RSVPs, Turnstile do the real work.
  */
 export function clientIp(headers: Headers): string {
+  const cloudflare = headers.get('cf-connecting-ip')?.trim()
+  if (cloudflare && ADDRESS.test(cloudflare)) return cloudflare
+
   const forwarded = headers.get('x-forwarded-for')
   const first = forwarded?.split(',')[0]?.trim()
   return first || headers.get('x-real-ip') || 'unknown'

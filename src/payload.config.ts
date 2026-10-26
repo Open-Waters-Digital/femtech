@@ -27,6 +27,10 @@ export default buildConfig({
     },
     // Light only: the site has no dark palette for a dark admin to borrow.
     theme: 'light',
+    // Payload's own avatar, not Gravatar: no request to gravatar.com, which the
+    // Content Security Policy does not allow, and no hash of each admin's email
+    // address sent to a third party.
+    avatar: 'default',
     meta: {
       titleSuffix: ' – FemTech Healthcare Network',
       defaultOGImageType: 'off',

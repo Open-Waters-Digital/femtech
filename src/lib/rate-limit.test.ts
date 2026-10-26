@@ -36,6 +36,28 @@ describe('rateLimit', () => {
 })
 
 describe('clientIp', () => {
+  it('prefers the address Cloudflare saw over anything in x-forwarded-for', () => {
+    // A visitor can pre-fill x-forwarded-for; Cloudflare appends to it rather
+    // than replacing it. cf-connecting-ip is Cloudflare's own.
+    const headers = new Headers({
+      'cf-connecting-ip': '198.51.100.20',
+      'x-forwarded-for': '203.0.113.7, 198.51.100.20, 172.70.0.1',
+    })
+    expect(clientIp(headers)).toBe('198.51.100.20')
+  })
+
+  it('accepts an IPv6 address from Cloudflare', () => {
+    expect(clientIp(new Headers({ 'cf-connecting-ip': '2001:db8::1' }))).toBe('2001:db8::1')
+  })
+
+  it('ignores a cf-connecting-ip that is not an address, and falls back', () => {
+    const headers = new Headers({
+      'cf-connecting-ip': 'not an address, honestly',
+      'x-forwarded-for': '203.0.113.7',
+    })
+    expect(clientIp(headers)).toBe('203.0.113.7')
+  })
+
   it('takes the left-most entry of x-forwarded-for, which is the client', () => {
     // Everything after the first was appended by an intermediary. Reading the
     // last one instead would key the limit on Railway's proxy, which is the

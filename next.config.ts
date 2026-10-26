@@ -3,6 +3,7 @@ import type { NextConfig } from 'next'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
+import { STATIC_SECURITY_HEADERS } from './src/lib/security-headers'
 import { uploadImagePatterns } from './src/lib/uploads'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -17,6 +18,11 @@ const nextConfig: NextConfig = {
     // A missing entry is not a build failure: the page builds and then throws
     // on the first request that renders the image. uploads.test.ts guards it.
     localPatterns: uploadImagePatterns(),
+  },
+  // The headers that never vary. The Content Security Policy carries a
+  // per-request nonce, so src/proxy.ts sets it instead.
+  async headers() {
+    return [{ source: '/:path*', headers: STATIC_SECURITY_HEADERS }]
   },
   async redirects() {
     return [

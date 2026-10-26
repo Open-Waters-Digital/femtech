@@ -257,3 +257,18 @@ all-day, multi-day, topic TBC, full and cancelled.
   contact address.
 - Whether the Webflow-era "Find Latest News" and "Insights and Advice" on the
   home page should point at /events once it exists.
+
+## Decisions made while building
+
+- **The withdraw write lives at `/events/withdraw/confirm`**, not as a `POST`
+  beside the page: Next.js cannot hold a `page.tsx` and a `route.ts` on one
+  segment. The page's button is a plain form posting there, so withdrawing
+  works without JavaScript; the route answers with a redirect back to the page,
+  where the same token now reads as withdrawn.
+- **Full and closed answer a repeat RSVP like any other.** If an address that
+  already holds a place got "booked" from a full event while a stranger got
+  "full", the form would reveal who is attending. The cost: in that one case
+  the confirmation is not resent.
+- **`clientIp` prefers `cf-connecting-ip`** now that the domain is behind
+  Cloudflare, which appends to `x-forwarded-for` rather than replacing it, so
+  that header's left-most entry is the visitor's to choose.
