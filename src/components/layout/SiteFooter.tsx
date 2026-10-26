@@ -35,10 +35,16 @@ export async function SiteFooter() {
         <div className="mt-8 border-t border-line pt-10 md:mt-10 md:pt-14">
           <div className="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
             <div className="flex max-w-[48ch] flex-col items-start gap-8">
-              <p className="font-display text-2xl leading-normal text-balance">
-                {settings.footerHeading}
-              </p>
-              <Button href={SIGN_UP_PATH}>{settings.footerCtaLabel}</Button>
+              {/* Both are required in the admin, but absent until Site settings
+                  is first saved: a fresh database, before the seed. */}
+              {settings.footerHeading ? (
+                <p className="font-display text-2xl leading-normal text-balance">
+                  {settings.footerHeading}
+                </p>
+              ) : null}
+              {settings.footerCtaLabel ? (
+                <Button href={SIGN_UP_PATH}>{settings.footerCtaLabel}</Button>
+              ) : null}
             </div>
             <nav aria-label="Footer">
               <ul className="flex flex-wrap gap-x-6 text-sm md:flex-col md:items-end">
