@@ -1,8 +1,9 @@
 # femtechhealth.com
 
 The website of FemTech Healthcare Network, rebuilt from Webflow as a Payload
-CMS site on Railway. Three public pages, a members list that the sign-up form
-writes to, and an email to the team for every sign-up.
+CMS site on Railway. Four public pages, a members list that the sign-up form
+writes to, an email to the team for every sign-up, and events: Tanya's
+speaking engagements, and the network's own events with RSVP.
 
 **Spec-driven.** Any new route, collection, field, client component or design
 token goes through an OpenSpec proposal first (see "Working with OpenSpec").
@@ -111,6 +112,31 @@ Bug fixes, copy changes and dependency bumps do not.
 - ✅ Saved to the **members** collection, then the team is emailed through
   Resend, after the response. See "The sign-up path".
 
+### Events `/events`
+
+- ✅ One `events` collection, two kinds. **Speaking**: someone from the network
+  at another organiser's event, linking out to the organiser (new tab), or plain
+  text until a link is set. **Hosted**: the network's own, with a page at
+  `/events/<slug>` and RSVP. Only `published` events show; a `cancelled` hosted
+  event keeps its page (noindex) saying so. `collections/Events.ts`.
+- ✅ Upcoming soonest first, then "Past events", split per request so an event
+  moves on its own; "Events – coming soon." with a sign-up link when nothing
+  is upcoming. Dates in the event's own zone ("11:40 CET"), ranges and
+  all-day events. `lib/events/format.ts`, `components/events/EventCard.tsx`.
+- ✅ Seeded with three engagements (Field Service Europe 2026, Revive ME 2026,
+  Service Next Medical 2027), idempotent per slug, never overwritten.
+- ✅ **RSVP** on a hosted event: name and email, capacity and an optional
+  closing time, the place confirmed by email with a withdraw link. Needs
+  JavaScript (Turnstile does); without it the page says so and gives
+  `contactEmail`. See "The RSVP path".
+- ✅ **Withdraw** at `/events/withdraw?token=…`: opening the link changes
+  nothing (mail scanners follow links); the button posts to
+  `/events/withdraw/confirm`. Idempotent; a past event is left alone.
+- ✅ Registrations are admin only (`event-registrations`), one per event per
+  email, linked to the member with the same address. RSVPing does not add
+  anyone to the members list. An event with registrations cannot be deleted,
+  only cancelled. The admin shows "confirmed places" against capacity.
+
 ### The site
 
 - ✅ Header (over the page, not fixed, as on Webflow), mobile menu, footer with
@@ -120,13 +146,21 @@ Bug fixes, copy changes and dependency bumps do not.
   settings → Social profiles, each URL checked against its platform's host
   (`lib/social.ts`). Shown as marks at the end of the footer's copyright line;
   nothing is drawn while there are none. After luxury-gardens' `SocialLinks`.
-- ✅ "Events (coming soon)" is text, not a link. Webflow linked it to `#`.
+- ✅ "Events" in the navigation links to `/events` (Webflow linked it to `#`).
 - ✅ Redirects from the Webflow URLs: `/contact` → `/sign-up` (308), and the
   `.html` forms of each page.
-- ✅ `robots.txt` (disallow all outside production), `sitemap.xml`, canonical
+- ✅ `robots.txt` (disallow all outside production), `sitemap.xml` (per
+  request, with upcoming hosted events), canonical
   per page, per-page titles and descriptions; `/design-system` and the sign-up
   outcome pages are `noindex`.
 - ✅ The site's own 404 for any unmatched URL (`(frontend)/[...missing]`).
+- ✅ **DNS on Cloudflare** since 26 October 2026 (registrar still GoDaddy).
+  `femtechhealth.com` redirects to `www` with a Cloudflare redirect rule (301,
+  path and query kept); SSL/TLS mode **Full**, not Full (strict), which breaks
+  Railway's certificate issuance. The Microsoft 365 records (`autodiscover`,
+  `lyncdiscover`, `sip`, `msoid`, `email`, the SRVs, MX, SPF, DMARC) must stay
+  **DNS only**: proxying them breaks Outlook set-up and Teams sign-in. The root
+  and `www` still point at Webflow until the cut-over (delivery item 12).
 - 🟡 Analytics. See "Delivery order".
 
 ## Delivery order
@@ -159,10 +193,12 @@ Locked. Revisit only if a dependency changes.
   into a mailing tool. Payload's import/export plugin is the likely route.
 - 🔵 **Welcome email to the member.** Deliberately not sent today: an email to
   the typed address turns the form into a way to send mail to strangers, and
-  needs Turnstile in front of it first.
+  needs Turnstile in front of it first. Turnstile now exists (RSVP), so this is
+  unblocked: put the widget on the sign-up form too.
 - 🔵 **Unsubscribe.** `status` exists on members; a public unsubscribe link
   arrives with the first email sent to members.
-- 🔵 **Events.** The nav already announces it. Likely a collection and a page.
+- 🔵 **Event extras.** Waitlists, reminders, calendar files, emailing the team
+  per RSVP. Deliberately not built with the first events.
 - 🔵 **Member accounts.** Profiles, sign-in, a directory. The reason members
   are people rather than submissions.
 
@@ -177,12 +213,16 @@ src/
       sign-up/             form, thank-you, not-sent
       join/route.ts        POST /join: the only public write. Start here for sign-up
       join/token/          a fresh dwell token for a form left open too long
+      events/              the listing; [slug]/ a hosted event's page,
+                           [slug]/rsvp/route.ts the RSVP write; withdraw/ the
+                           withdraw page, withdraw/confirm/ its one write
       design-system/       the showcase (noindex)
       [...missing]/        sends unmatched URLs to not-found.tsx
       health/              liveness probe for Docker and Railway
     (payload)/             Payload's admin and API (generated; custom.css is ours)
     robots.ts, sitemap.ts  must sit at the app root to be picked up
-  collections/             Members, Media, Videos, Users
+  collections/             Members, Events, EventRegistrations, Media, Videos,
+                           Users
   globals/                 Home, About, SiteSettings: all page copy
   components/
     primitives/            Button, Heading, Text, Eyebrow, Field (and
@@ -192,12 +232,19 @@ src/
     layout/                SiteHeader, MobileMenu, SiteFooter, RevealObserver,
                            ScrollProgress, navigation.ts
     social/                SocialLinks, SocialMark (Simple Icons paths, CC0)
+    events/                EventCard, RsvpPanel, RsvpForm (client),
+                           RsvpFormView (every state, for the showcase)
     home/, about/, signup/ page sections
   lib/
     content.ts             every read the public pages make
     signup/                schema (shared by form and server, with the
                            industry list), notify (Resend)
     social.ts              platforms, labels and the profile URL check
+    events/                format (dates in the event's zone), queries,
+                           places (uncached counts), rsvp-state (one open/full/
+                           closed rule), reserve (the lock and transaction),
+                           turnstile, withdraw-token, withdraw, confirm (email)
+    email.ts               message shape, escaping and timeout for every email
     dwell-token.ts, rate-limit.ts   sign-up defences
     scroll-progress.ts     scroll ranges and the scrub glide, for ScrollProgress
     revalidate.ts, uploads.ts, storage.ts, site-env.ts, text.ts
@@ -259,7 +306,8 @@ admin, without hand-building any of it.
 
 ## Schema and data-layer conventions
 
-- **Collections:** `members` (personal data, admin only), `media` (images, alt
+- **Collections:** `members` (personal data, admin only), `events` (public when
+  published), `event-registrations` (personal data, admin only), `media` (images, alt
   text required, exact mime types, no SVG), `videos` (the hero video, never
   given to next/image), `users` (admin accounts).
 - **Globals:** `home`, `about`, `site-settings`. Plain textareas, split into
@@ -300,12 +348,36 @@ member gets the same answer as a new one, so the form cannot be used to test
 who is on the list. The notification goes only to `SIGNUP_NOTIFY_EMAIL`, never
 to the typed address, which is why there is no CAPTCHA (see the backlog).
 
+## The RSVP path
+
+`POST /events/[slug]/rsvp` (`app/(frontend)/events/[slug]/rsvp/route.ts`), the
+second public write and the first that emails the address typed in:
+
+1. Per-IP rate limit (`rsvp:` key, its own window).
+2. JSON only (`415` otherwise): the form needs JavaScript, because Turnstile does.
+3. Honeypot `website`, then the dwell token, as on `/join`.
+4. Zod (`lib/events/rsvp-schema.ts`), the same schema the form runs.
+5. **Cloudflare Turnstile**, verified server side with a 5 s timeout. Missing
+   keys outside development (preview included) fail closed and log
+   `[rsvp] turnstile unavailable`.
+6. The event: published, hosted, not started, before `rsvpClosesAt`, under
+   `capacity` (`lib/events/rsvp-state.ts`, read by the page too).
+7. Reserve inside a transaction behind a per-event lock (`lib/events/reserve.ts`):
+   one confirmed place for the last one, even for two requests at once. The
+   lock is in-process, so correct only with one replica.
+8. Email the registrant in `after()` with a withdraw link (HMAC over
+   `withdraw:<id>`, `PAYLOAD_SECRET`); the result goes on `confirmation`.
+
+A repeat RSVP changes no stored detail and resends the confirmation. Full and
+closed answer the same whether or not the address already has a place, so the
+form cannot reveal who is attending.
+
 ## Engineering standards
 
 ### Rendering and performance
 
 - Server components by default. The client components are `MobileMenu`,
-  `HeroVideo`, `SignupForm`, `RevealObserver` and `ScrollProgress`; a new one
+  `HeroVideo`, `SignupForm`, `RsvpForm`, `RevealObserver` and `ScrollProgress`; a new one
   needs a reason in its proposal.
 - Motion is CSS for load and hover. Scroll-linked motion goes through
   `ScrollProgress` (maths in `lib/scroll-progress.ts`, tested), not CSS
@@ -315,7 +387,9 @@ to the typed address, which is why there is no CAPTCHA (see the backlog).
   announced letter by letter.
 - Every CMS image goes through `PayloadImage` (dimensions from the document,
   focal point honoured). Only the hero poster is `preload`.
-- No third-party script on any page until analytics, which loads after the
+- One third-party script: Cloudflare Turnstile, on hosted event pages only,
+  loaded by `RsvpForm` once it is on screen. Otherwise none until analytics,
+  which loads after the
   page is interactive.
 
 ### Types
@@ -408,6 +482,12 @@ Types: `feat`, `fix`, `refactor`, `perf`, `docs`, `test`, `build`, `ci`,
   one. Stored in Postgres on
   Railway, shown only in the admin, and sent to the team by email through
   Resend.
+- **Event registrations:** first name, last name, email, the event, and when
+  they RSVPd or withdrew. Admin only. Sent nowhere but the registrant's own
+  confirmation.
+- **Cloudflare Turnstile** sees the visitor's IP address and browser signals on
+  a hosted event's page, and sets no tracking cookie. The privacy notice must
+  name it (delivery item 10).
 - **Not collected:** no cookies, no tracking, no analytics until delivery
   item 11.
 - **Retention:** not decided (Open questions).
@@ -422,8 +502,17 @@ Types: `feat`, `fix`, `refactor`, `perf`, `docs`, `test`, `build`, `ci`,
   against a real inbox. A notification in spam is a lost sign-up.
 - 🧱 **Error tracking with alerting.** A silently broken form is a silently
   lost list. At minimum, alert on `[join]` errors in the Railway logs.
-- 🧱 **Security headers and a CSP**, including the analytics proxy host.
-- 🧱 **A shared-store rate limit** before raising `replicas` above one.
+- 🧱 **Security headers and a CSP**, including the analytics proxy host and
+  `https://challenges.cloudflare.com` in `script-src` and `frame-src`
+  (Turnstile).
+- 🧱 **Remove the service's `*.up.railway.app` address** once the domain is
+  live. Behind Cloudflare, `clientIp` trusts `cf-connecting-ip`; a request
+  straight to Railway could forge it and sidestep the rate limits. Remove the
+  Railway hostname from the Turnstile widget at the same time.
+- 🧱 **Turnstile keys** (`TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`) in
+  Railway before any hosted event is published. Widget mode Managed.
+- 🧱 **A shared-store rate limit and RSVP lock** before raising `replicas`
+  above one: both are in memory today.
 - 🧱 **An OG image.** None is set, so a shared link has no preview image.
 - 🧱 **Search Console and Bing Webmaster Tools**, domain property verified by
   DNS before the domain cuts over, per `openwaters-analytics`.
@@ -471,6 +560,11 @@ Types: `feat`, `fix`, `refactor`, `perf`, `docs`, `test`, `build`, `ci`,
   version would be sharper.
 - 🧪 **Analytics tier** (Essentials, Insights or Growth) and who owns the
   PostHog organisation.
+- 🧪 **Revive ME 2026**: its official URL, and whether Tanya's role is a
+  keynote, panel or talk. Its dates and venue came from secondary listings.
+- 🧪 **Events copy written here, not supplied:** the listing's lead, the RSVP
+  panel, the confirmation email and the withdraw page. And a public
+  `contactEmail` (Site settings → Footer) for visitors without JavaScript.
 - 🧪 **Webflow template copy.** "Insights and Advice" and "Find Latest News" on
   the home page describe features the site does not have yet. Carried over
   unchanged, because the brief was to rebuild the home page as it is.
