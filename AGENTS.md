@@ -111,6 +111,14 @@ Bug fixes, copy changes and dependency bumps do not.
   the page.
 - ✅ Saved to the **members** collection, then the team is emailed through
   Resend, after the response. See "The sign-up path".
+- ✅ **Welcome email** to a new member, in the sign-up page's own copy (the
+  thank-you, what membership means, coming soon, the LinkedIn line) and a link
+  to the site. Sent only when the form's Turnstile check passed, never to a
+  repeat sign-up; recorded on the member as **Welcome email**. Checked locally
+  with Turnstile's test keys; not yet read in a real inbox. `lib/signup/welcome.ts`.
+- ✅ **Turnstile on the form**, invisible unless Cloudflare wants a tick. It
+  decides only the welcome: no JavaScript, a blocked check or a failed one still
+  signs up, and the team's email says no welcome was sent.
 
 ### Events `/events`
 
@@ -151,8 +159,11 @@ Bug fixes, copy changes and dependency bumps do not.
   `.html` forms of each page.
 - ✅ `robots.txt` (disallow all outside production), `sitemap.xml` (per
   request, with upcoming hosted events), canonical
-  per page, per-page titles and descriptions; `/design-system` and the sign-up
-  outcome pages are `noindex`.
+  per page, per-page titles and descriptions; the sign-up outcome pages are
+  `noindex`. `/design-system` is local only: a 404 wherever `SITE_ENV` is set.
+- ✅ **Branded emails.** Every email (team notification, RSVP confirmation,
+  welcome) is drawn by `lib/email-layout.ts`: an ink masthead with the cream
+  mark, a cream card, Georgia and Helvetica in place of the web fonts.
 - ✅ The site's own 404 for any unmatched URL (`(frontend)/[...missing]`).
 - ✅ **DNS on Cloudflare** since 26 October 2026 (registrar still GoDaddy).
   `femtechhealth.com` redirects to `www` with a Cloudflare redirect rule (301,
@@ -177,8 +188,10 @@ Locked. Revisit only if a dependency changes.
 8. 🟡 Railway: create the GitHub repo, the project, Postgres, a bucket and the
    service; apply `.railway/railway.ts`; seed production; check the deployment
    manifest shows the pre-deploy command and the health check.
-9. 🟡 Resend: verify the sending domain, set the three variables, send a real
-   test sign-up and read the email in a real inbox.
+9. ✅ Resend: configured and sending (4 November 2026), from
+   `FemTech Healthcare Network <website@notify.femtechhealth.com>`. The
+   branded layout and the welcome email still need reading in a real inbox
+   once deployed.
 10. 🟡 Privacy page, from the client's wording (see Open questions). Needed
     before the form collects real data, and before analytics.
 11. 🟡 Analytics, following the `openwaters-analytics` skill: the client's
@@ -191,10 +204,6 @@ Locked. Revisit only if a dependency changes.
 
 - 🔵 **Members export.** A CSV download from the admin, so the list can go
   into a mailing tool. Payload's import/export plugin is the likely route.
-- 🔵 **Welcome email to the member.** Deliberately not sent today: an email to
-  the typed address turns the form into a way to send mail to strangers, and
-  needs Turnstile in front of it first. Turnstile now exists (RSVP), so this is
-  unblocked: put the widget on the sign-up form too.
 - 🔵 **Unsubscribe.** `status` exists on members; a public unsubscribe link
   arrives with the first email sent to members.
 - 🔵 **Event extras.** Waitlists, reminders, calendar files, emailing the team
@@ -216,7 +225,7 @@ src/
       events/              the listing; [slug]/ a hosted event's page,
                            [slug]/rsvp/route.ts the RSVP write; withdraw/ the
                            withdraw page, withdraw/confirm/ its one write
-      design-system/       the showcase (noindex)
+      design-system/       the showcase; local only (404 where SITE_ENV is set)
       [...missing]/        sends unmatched URLs to not-found.tsx
       health/              liveness probe for Docker and Railway
     (payload)/             Payload's admin and API (generated; custom.css is ours)
@@ -235,17 +244,24 @@ src/
     social/                SocialLinks, SocialMark (Simple Icons paths, CC0)
     events/                EventCard, RsvpPanel, RsvpForm (client),
                            RsvpFormView (every state, for the showcase)
-    home/, about/, signup/ page sections
+    signup/                SignupForm (client), SignupFormView (every state),
+                           SignupThanks
+    turnstile/             useTurnstile: the widget, shared by both forms
+    home/, about/          page sections
   lib/
     content.ts             every read the public pages make
     signup/                schema (shared by form and server, with the
-                           industry list), notify (Resend)
+                           industry list), notify (the team), welcome (the
+                           new member)
     social.ts              platforms, labels and the profile URL check
     events/                format (dates in the event's zone), queries,
                            places (uncached counts), rsvp-state (one open/full/
                            closed rule), reserve (the lock and transaction),
-                           turnstile, withdraw-token, withdraw, confirm (email)
+                           withdraw-token, withdraw, confirm (email)
     email.ts               message shape, escaping and timeout for every email
+    email-layout.ts        the branded layout every email is drawn in
+    email-fixtures.ts      sample emails for the showcase
+    turnstile.ts           server verification, for RSVP and the welcome
     security-headers.ts    the CSP and the fixed security headers
     dwell-token.ts, rate-limit.ts   sign-up defences
     scroll-progress.ts     scroll ranges and the scrub glide, for ScrollProgress
@@ -265,21 +281,21 @@ public/fonts, public/brand Zodiak, Cabinet Grotesk, the mark
 
 ## Tech stack
 
-| Concern         | Choice                                                   | Status             |
-| --------------- | -------------------------------------------------------- | ------------------ |
-| Language        | TypeScript strict, `noUncheckedIndexedAccess`            | ✅                 |
-| Framework       | Next.js 16.3 App Router, React 19                        | ✅                 |
-| CMS             | Payload 3.90.1, admin at `/admin`                        | ✅                 |
-| Database        | Postgres 17; local on port 5435 via `compose.yaml`       | ✅                 |
-| Media           | Railway S3 bucket in deployed environments; disk locally | ✅                 |
-| Styling         | Tailwind v4, tokens in `src/styles/tokens.css`           | ✅                 |
-| Validation      | Zod, one schema for the form and the server              | ✅                 |
-| Email           | Resend                                                   | ✅ code, 🟡 config |
-| Tests           | Vitest (unit)                                            | ✅                 |
-| Package manager | pnpm 11.5.2, Node 24.20.0                                | ✅                 |
-| Deploy          | Railway, Dockerfile, `.railway/railway.ts`               | 🟡                 |
-| Analytics       | PostHog via `@open-waters-digital/analytics`             | 🟡                 |
-| Error tracking  | None yet                                                 | 🧱                 |
+| Concern         | Choice                                                   | Status |
+| --------------- | -------------------------------------------------------- | ------ |
+| Language        | TypeScript strict, `noUncheckedIndexedAccess`            | ✅     |
+| Framework       | Next.js 16.3 App Router, React 19                        | ✅     |
+| CMS             | Payload 3.90.1, admin at `/admin`                        | ✅     |
+| Database        | Postgres 17; local on port 5435 via `compose.yaml`       | ✅     |
+| Media           | Railway S3 bucket in deployed environments; disk locally | ✅     |
+| Styling         | Tailwind v4, tokens in `src/styles/tokens.css`           | ✅     |
+| Validation      | Zod, one schema for the form and the server              | ✅     |
+| Email           | Resend                                                   | ✅     |
+| Tests           | Vitest (unit)                                            | ✅     |
+| Package manager | pnpm 11.5.2, Node 24.20.0                                | ✅     |
+| Deploy          | Railway, Dockerfile, `.railway/railway.ts`               | 🟡     |
+| Analytics       | PostHog via `@open-waters-digital/analytics`             | 🟡     |
+| Error tracking  | None yet                                                 | 🧱     |
 
 Same versions as fionacorbett and luxury-gardens on purpose: one set of
 Payload behaviours to know, and fixes travel between the repos.
@@ -341,14 +357,23 @@ admin, without hand-building any of it.
 5. Save. One row per lower-cased email. A repeat sign-up **does not overwrite**
    the existing row: an anonymous request must not be able to change someone
    else's details by typing their address. The team is told it was a repeat.
-6. Notify the team through Resend, in `after()`, once the visitor has their
-   answer. The result is written to the member's `notification` field. An
+6. Welcome, in `after()`, once the visitor has their answer: a **new** member
+   whose `cf-turnstile-response` passes Turnstile (`lib/turnstile.ts`, 5 s
+   timeout) is emailed the welcome (`lib/signup/welcome.ts`). No token, a
+   failed check or Turnstile unavailable means no welcome, `unverified` on the
+   member; unavailable is logged as an error (`[join] turnstile unavailable`).
+7. Notify the team through Resend, saying how the welcome went. Both results
+   are written to the member (`notification`, `welcomeEmail`) in one update. An
    unconfigured or failed send in production is logged as an error.
+
+Turnstile gates the welcome, never the sign-up: the form works without
+JavaScript, which Turnstile needs, so refusing on it would refuse people. The
+welcome is the one email to the typed address, and only a passed check and a
+new address can send it, once per address.
 
 Bot rejections answer exactly as success does. A visitor who was already a
 member gets the same answer as a new one, so the form cannot be used to test
-who is on the list. The notification goes only to `SIGNUP_NOTIFY_EMAIL`, never
-to the typed address, which is why there is no CAPTCHA (see the backlog).
+who is on the list.
 
 ## The RSVP path
 
@@ -392,10 +417,13 @@ form cannot reveal who is attending.
 - The CSP refuses any script it does not know: a new third-party script, or
   anything that needs eval, needs a change to `lib/security-headers.ts` and a
   reason. Zod runs `jitless` for the same reason.
-- One third-party script: Cloudflare Turnstile, on hosted event pages only,
-  loaded by `RsvpForm` once it is on screen. Otherwise none until analytics,
-  which loads after the
-  page is interactive.
+- One third-party script: Cloudflare Turnstile, on hosted event pages and
+  `/sign-up` only, loaded by `useTurnstile` once the form is near the screen.
+  Otherwise none until analytics, which loads after the page is interactive.
+- **Emails** go through `renderEmail` (`lib/email-layout.ts`): tables, inline
+  styles, colours from `EMAIL_COLOURS` in `lib/brand-constants.ts` (a test
+  keeps them equal to `tokens.css`), every value escaped by the block that
+  draws it. A new email is a heading and blocks, and goes on `/design-system`.
 
 ### Types
 
@@ -486,12 +514,13 @@ Types: `feat`, `fix`, `refactor`, `perf`, `docs`, `test`, `build`, `ci`,
   and when they signed up. No message since 2026-10-20; older rows may hold
   one. Stored in Postgres on
   Railway, shown only in the admin, and sent to the team by email through
-  Resend.
+  Resend. A new member whose Turnstile check passed is sent one welcome email,
+  to the address they gave and nowhere else.
 - **Event registrations:** first name, last name, email, the event, and when
   they RSVPd or withdrew. Admin only. Sent nowhere but the registrant's own
   confirmation.
 - **Cloudflare Turnstile** sees the visitor's IP address and browser signals on
-  a hosted event's page, and sets no tracking cookie. The privacy notice must
+  `/sign-up` and on a hosted event's page, and sets no tracking cookie. The privacy notice must
   name it (delivery item 10).
 - **Not collected:** no cookies, no tracking, no analytics until delivery
   item 11.
@@ -522,8 +551,10 @@ Types: `feat`, `fix`, `refactor`, `perf`, `docs`, `test`, `build`, `ci`,
   live. Behind Cloudflare, `clientIp` trusts `cf-connecting-ip`; a request
   straight to Railway could forge it and sidestep the rate limits. Remove the
   Railway hostname from the Turnstile widget at the same time.
-- 🧱 **Turnstile keys** (`TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`) in
-  Railway before any hosted event is published. Widget mode Managed.
+- ✅ **Turnstile keys** (`TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`) set in
+  Railway (4 November 2026). Widget mode Managed. Its hostnames must include
+  `www.femtechhealth.com` and the Railway address, or every check fails and
+  nobody is welcomed (`[join] turnstile unavailable` in the logs).
 - 🧱 **A shared-store rate limit and RSVP lock** before raising `replicas`
   above one: both are in memory today.
 - 🧱 **An OG image.** None is set, so a shared link has no preview image.
@@ -542,15 +573,15 @@ Types: `feat`, `fix`, `refactor`, `perf`, `docs`, `test`, `build`, `ci`,
 - 🧪 **Railway project and GitHub repo.** `.railway/railway.ts` assumes the
   repo `Open-Waters-Digital/femtech` on `main` and a project named
   `femtechhealth.com`. Neither exists yet.
-- 🧪 **Who is emailed about sign-ups** (`SIGNUP_NOTIFY_EMAIL`), and the sending
-  address and domain (`SIGNUP_FROM_EMAIL`).
 - 🧪 **Tanya's LinkedIn URL**, for the about page.
 - 🧪 **A better founder photograph.** The billboard photograph is a stopgap.
 - 🧪 **Privacy notice wording, retention period and lawful basis** for the
   members list. Take them from the client or their adviser; do not draft legal
   copy.
-- 🧪 **Sign-up copy written here, not supplied:** the field error messages and
-  the not-sent messages, in code.
+- 🧪 **Sign-up copy written here, not supplied:** the field error messages, the
+  not-sent messages, "Please complete the check above the button…", and in the
+  welcome email "Hello <first name>,", "Visit femtechhealth.com" and its footer
+  line, all in code. The welcome's subject is the thank-you heading.
 - 🧪 **The required updates checkbox.** The client's copy makes it a condition
   of joining. Under UK GDPR, consent that is a condition of a service is
   generally not freely given unless membership _is_ the updates. The client or
@@ -558,8 +589,9 @@ Types: `feat`, `fix`, `refactor`, `perf`, `docs`, `test`, `build`, `ci`,
   line in `lib/signup/schema.ts` and the label.
 - 🧪 **Asterisks.** The client's copy marks required fields with `*`; the site
   marks optional ones instead. Confirm, or flip it in `Field`.
-- 🧪 **The network's LinkedIn URL** (and any other profiles), for the footer and
-  the thank-you message. Enter in Site settings → Social profiles.
+- 🧪 **The network's other profiles** (Instagram, Facebook, X), if any. LinkedIn
+  is https://www.linkedin.com/company/femtech-healthcare-network/ (supplied
+  4 November 2026; in the seed, and entered in production's Site settings).
 - 🧪 **"December 2026"** in the sign-up copy will go stale. Editable in the
   admin.
 - 🧪 **Brand name.** The site uses "femtech" as the wordmark, "Femtech" in the

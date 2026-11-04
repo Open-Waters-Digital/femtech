@@ -115,5 +115,25 @@ export const Members: CollectionConfig = {
         description: 'Whether the team was emailed about this sign-up.',
       },
     },
+    {
+      name: 'welcomeEmail',
+      label: 'Welcome email',
+      type: 'select',
+      options: [
+        { label: 'Sent', value: 'sent' },
+        { label: 'Failed', value: 'failed' },
+        { label: 'Not configured', value: 'unconfigured' },
+        // No Turnstile pass: no JavaScript, the check blocked, or a bot. The
+        // sign-up form only emails a typed address after the check passes.
+        { label: 'Not sent: check not passed', value: 'unverified' },
+        { label: 'Not sent (development)', value: 'skipped' },
+      ],
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+        description:
+          'Whether this member was sent the welcome email. Empty for members who joined before it existed, or were added here.',
+      },
+    },
   ],
 }

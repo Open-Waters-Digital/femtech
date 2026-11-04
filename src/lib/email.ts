@@ -26,6 +26,19 @@ export type Send = (message: Message) => Promise<{ error: unknown }>
  * into a header-injection vector.
  */
 export function safe(value: string): string {
+  return escapeRun(value).trim()
+}
+
+/** The same, for the plain-text part, where only the line breaks are a hazard. */
+export function plain(value: string): string {
+  return plainRun(value).trim()
+}
+
+/**
+ * `safe` without the trim, for a run of text that sits beside another (a
+ * sentence and then a link), where the space between them is the point.
+ */
+export function escapeRun(value: string): string {
   return value
     .replace(/[\r\n]+/g, ' ')
     .replace(/&/g, '&amp;')
@@ -33,12 +46,11 @@ export function safe(value: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;')
-    .trim()
 }
 
-/** The same, for the plain-text part, where only the line breaks are a hazard. */
-export function plain(value: string): string {
-  return value.replace(/[\r\n]+/g, ' ').trim()
+/** `plain` without the trim. */
+export function plainRun(value: string): string {
+  return value.replace(/[\r\n]+/g, ' ')
 }
 
 export const resendSender =

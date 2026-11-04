@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { TURNSTILE_TEST_KEYS, turnstileConfig, verifyTurnstile } from '@/lib/events/turnstile'
+import { TURNSTILE_TEST_KEYS, turnstileConfig, verifyTurnstile } from '@/lib/turnstile'
 
 const CONFIG = { siteKey: 'site', secret: 'secret' }
 

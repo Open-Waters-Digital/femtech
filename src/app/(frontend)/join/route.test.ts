@@ -9,13 +9,27 @@ const db = vi.hoisted(() => ({
   members: [] as Record<string, unknown>[],
   create: vi.fn(),
   update: vi.fn(),
+  /** What `after()` was handed, so a test can run it. */
+  pending: [] as (() => Promise<void>)[],
+  turnstile: 'pass' as 'pass' | 'fail' | 'unavailable',
+  welcome: vi.fn(async (): Promise<string> => 'sent'),
+  notify: vi.fn(async (): Promise<string> => 'sent'),
 }))
 
 vi.mock('@payload-config', () => ({ default: Promise.resolve({}) }))
 
-vi.mock('next/server', () => ({ after: vi.fn() }))
+vi.mock('next/server', () => ({
+  after: (task: () => Promise<void>) => {
+    db.pending.push(task)
+  },
+}))
 
-vi.mock('@/lib/signup/notify', () => ({ notifyTeam: vi.fn(async () => 'skipped') }))
+vi.mock('@/lib/signup/notify', () => ({ notifyTeam: db.notify }))
+vi.mock('@/lib/turnstile', () => ({ verifyTurnstile: vi.fn(async () => db.turnstile) }))
+vi.mock('@/lib/signup/welcome', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/signup/welcome')>()),
+  sendWelcome: db.welcome,
+}))
 
 vi.mock('payload', () => {
   class ValidationError extends Error {}
@@ -32,6 +46,7 @@ vi.mock('payload', () => {
         return row
       },
       update: db.update,
+      findGlobal: async () => ({ signupThanks: 'Welcome.', social: [] }),
     }),
   }
 })
@@ -69,9 +84,21 @@ beforeEach(() => {
   secret = process.env.PAYLOAD_SECRET
   process.env.PAYLOAD_SECRET = 'test-secret'
   db.members.length = 0
+  db.pending.length = 0
+  db.turnstile = 'pass'
   db.create.mockClear()
+  db.update.mockReset()
+  db.welcome.mockReset().mockResolvedValue('sent')
+  db.notify.mockReset().mockResolvedValue('sent')
   resetRateLimit()
 })
+
+/** Run what the route left for after the response. */
+async function runAfter(): Promise<void> {
+  for (const task of db.pending.splice(0)) await task()
+}
+
+const WITH_TOKEN = { ...VALID, 'cf-turnstile-response': 'token' }
 
 afterEach(() => {
   if (secret === undefined) delete process.env.PAYLOAD_SECRET
@@ -156,5 +183,125 @@ describe('POST /join', () => {
       organisation: 'Analytical Health',
       industry: 'digital-health',
     })
+  })
+})
+
+describe('POST /join: the welcome email', () => {
+  it('welcomes a new member whose check passed, then tells the team it was sent', async () => {
+    await POST(post(WITH_TOKEN, 'application/json'))
+    await runAfter()
+    expect(db.welcome).toHaveBeenCalledWith(
+      expect.objectContaining({ firstName: 'Ada', email: 'ada@example.com' }),
+      expect.objectContaining({ thanks: 'Welcome.' }),
+    )
+    expect(db.notify).toHaveBeenCalledWith(expect.objectContaining({ id: 1 }), {
+      repeat: false,
+      welcome: 'sent',
+    })
+    expect(db.update).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 1, data: { notification: 'sent', welcomeEmail: 'sent' } }),
+    )
+    // Welcome first, so the team's email states the real outcome.
+    expect(db.welcome.mock.invocationCallOrder[0]).toBeLessThan(
+      db.notify.mock.invocationCallOrder[0] ?? 0,
+    )
+  })
+
+  it('saves but does not welcome a sign-up with no token, as without JavaScript', async () => {
+    const response = await POST(post(VALID))
+    expect(response.status).toBe(303)
+    expect(response.headers.get('location')).toBe('/sign-up/thank-you')
+    await runAfter()
+    expect(db.members).toHaveLength(1)
+    expect(db.welcome).not.toHaveBeenCalled()
+    expect(db.notify).toHaveBeenCalledWith(expect.anything(), {
+      repeat: false,
+      welcome: 'unverified',
+    })
+    expect(db.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { notification: 'sent', welcomeEmail: 'unverified' } }),
+    )
+  })
+
+  it('saves but does not welcome a sign-up whose check failed', async () => {
+    db.turnstile = 'fail'
+    const response = await POST(post(WITH_TOKEN, 'application/json'))
+    expect(response.status).toBe(200)
+    await runAfter()
+    expect(db.members).toHaveLength(1)
+    expect(db.welcome).not.toHaveBeenCalled()
+    expect(db.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { notification: 'sent', welcomeEmail: 'unverified' } }),
+    )
+  })
+
+  it('logs an error, and does not welcome, when Turnstile is unavailable', async () => {
+    db.turnstile = 'unavailable'
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    await POST(post(WITH_TOKEN, 'application/json'))
+    await runAfter()
+    expect(db.welcome).not.toHaveBeenCalled()
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('[join] turnstile unavailable'))
+    error.mockRestore()
+  })
+
+  it('does not welcome a repeat, and changes nothing on the member', async () => {
+    await POST(post(WITH_TOKEN, 'application/json'))
+    await runAfter()
+    db.welcome.mockClear()
+    db.update.mockClear()
+
+    await POST(post({ ...WITH_TOKEN, email: 'ADA@example.com' }, 'application/json'))
+    await runAfter()
+    expect(db.welcome).not.toHaveBeenCalled()
+    expect(db.notify).toHaveBeenLastCalledWith(expect.anything(), {
+      repeat: true,
+      welcome: undefined,
+    })
+    expect(db.update).not.toHaveBeenCalled()
+  })
+
+  it('still tells the team when the welcome fails, and records it', async () => {
+    db.welcome.mockResolvedValue('failed')
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    await POST(post(WITH_TOKEN, 'application/json'))
+    await runAfter()
+    expect(db.notify).toHaveBeenCalledWith(expect.anything(), {
+      repeat: false,
+      welcome: 'failed',
+    })
+    expect(db.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { notification: 'sent', welcomeEmail: 'failed' } }),
+    )
+    expect(error).toHaveBeenCalledWith('[join] welcome failed for member 1')
+    error.mockRestore()
+  })
+
+  it('logs no name or address on any path', async () => {
+    const lines: string[] = []
+    const capture = (...args: unknown[]) => {
+      lines.push(args.map(String).join(' '))
+    }
+    const warn = vi.spyOn(console, 'warn').mockImplementation(capture)
+    const error = vi.spyOn(console, 'error').mockImplementation(capture)
+    const log = vi.spyOn(console, 'log').mockImplementation(capture)
+
+    for (const outcome of ['pass', 'fail', 'unavailable'] as const) {
+      db.turnstile = outcome
+      db.welcome.mockResolvedValue(outcome === 'pass' ? 'failed' : 'sent')
+      db.members.length = 0
+      resetRateLimit()
+      await POST(post(WITH_TOKEN, 'application/json'))
+      await POST(post(VALID))
+      await runAfter()
+    }
+
+    expect(lines.length).toBeGreaterThan(0)
+    for (const line of lines) {
+      expect(line).not.toMatch(/Ada|Lovelace|ada@example\.com/i)
+    }
+    warn.mockRestore()
+    error.mockRestore()
+    log.mockRestore()
   })
 })

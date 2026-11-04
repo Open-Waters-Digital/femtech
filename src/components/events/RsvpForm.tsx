@@ -3,6 +3,7 @@
 import { type FormEvent, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 
 import { type RsvpStatus, RsvpFormView } from '@/components/events/RsvpFormView'
+import { useTurnstile } from '@/components/turnstile/useTurnstile'
 import {
   type RsvpFieldErrors,
   rsvpFieldErrors,
@@ -19,28 +20,9 @@ import {
  * fallback: Turnstile needs JavaScript, so the page says so in a <noscript>
  * instead of offering a form that cannot succeed.
  *
- * The Turnstile script loads only here, only on a hosted event's page, and
+ * The Turnstile script (`useTurnstile`, shared with the sign-up form) loads
  * only once the form is on screen: the site's one third-party script.
  */
-
-type Turnstile = {
-  render: (
-    container: HTMLElement,
-    options: {
-      sitekey: string
-      appearance?: 'always' | 'execute' | 'interaction-only'
-      'response-field-name'?: string
-    },
-  ) => string
-  reset: (widgetId?: string) => void
-  remove: (widgetId?: string) => void
-}
-
-declare global {
-  interface Window {
-    turnstile?: Turnstile
-  }
-}
 
 /**
  * False on the server and during hydration, true once running in the browser.
@@ -56,27 +38,6 @@ function useHydrated(): boolean {
   )
 }
 
-const SCRIPT_SRC = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'
-
-/** One script tag, however many times the form mounts. */
-function loadTurnstile(): Promise<Turnstile> {
-  if (window.turnstile) return Promise.resolve(window.turnstile)
-  return new Promise((resolve, reject) => {
-    let script = document.querySelector<HTMLScriptElement>(`script[src="${SCRIPT_SRC}"]`)
-    if (!script) {
-      script = document.createElement('script')
-      script.src = SCRIPT_SRC
-      script.async = true
-      script.defer = true
-      document.head.appendChild(script)
-    }
-    script.addEventListener('load', () =>
-      window.turnstile ? resolve(window.turnstile) : reject(new Error('turnstile missing')),
-    )
-    script.addEventListener('error', () => reject(new Error('turnstile failed to load')))
-  })
-}
-
 export function RsvpForm({
   slug,
   siteKey,
@@ -90,45 +51,15 @@ export function RsvpForm({
   const [status, setStatus] = useState<RsvpStatus>({ kind: 'editing' })
   const [errors, setErrors] = useState<RsvpFieldErrors>({})
   const [token, setToken] = useState(initialToken)
-  const challenge = useRef<HTMLDivElement>(null)
-  const widget = useRef<string | null>(null)
   const confirmedHeading = useRef<HTMLHeadingElement>(null)
-
-  useEffect(() => {
-    if (!hydrated) return
-    let cancelled = false
-    loadTurnstile()
-      .then((turnstile) => {
-        if (cancelled || !challenge.current || widget.current) return
-        widget.current = turnstile.render(challenge.current, {
-          sitekey: siteKey,
-          appearance: 'interaction-only',
-        })
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setStatus({
-            kind: 'failed',
-            message:
-              'The check that keeps this form free of spam did not load. Please reload the page, or try another browser.',
-          })
-        }
-      })
-    return () => {
-      cancelled = true
-      if (widget.current) window.turnstile?.remove(widget.current)
-      widget.current = null
-    }
-  }, [hydrated, siteKey])
+  const turnstile = useTurnstile(siteKey, hydrated)
 
   useEffect(() => {
     // Move focus to the confirmation, so a screen reader announces it.
     if (status.kind === 'confirmed') confirmedHeading.current?.focus()
   }, [status.kind])
 
-  const resetChallenge = () => {
-    if (widget.current) window.turnstile?.reset(widget.current)
-  }
+  const resetChallenge = turnstile.reset
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -197,13 +128,23 @@ export function RsvpForm({
 
   if (!hydrated) return null
 
+  // No check, no RSVP: say so in place of the form's own state until it loads.
+  const shown: RsvpStatus =
+    turnstile.state === 'unavailable' && status.kind === 'editing'
+      ? {
+          kind: 'failed',
+          message:
+            'The check that keeps this form free of spam did not load. Please reload the page, or try another browser.',
+        }
+      : status
+
   return (
     <RsvpFormView
-      status={status}
+      status={shown}
       errors={errors}
       dwellToken={token}
       onSubmit={onSubmit}
-      challengeRef={challenge}
+      challengeRef={turnstile.containerRef}
       confirmedHeadingRef={confirmedHeading}
     />
   )

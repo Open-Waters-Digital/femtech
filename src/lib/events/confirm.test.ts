@@ -56,7 +56,9 @@ describe('buildConfirmation', () => {
       { ...EVENT, title: '<script>x</script> night' },
       { from: 'f' },
     )
-    expect(message.html).not.toContain('<img')
+    // The layout's own <img> is the mark; the visitor's must be text.
+    expect(message.html).not.toContain('<img src=x')
+    expect(message.html).toContain('&lt;img src=x onerror=alert(1)&gt;')
     expect(message.html).not.toContain('<script>')
     expect(message.html).toContain('&lt;script&gt;')
   })
@@ -68,6 +70,15 @@ describe('buildConfirmation', () => {
       { from: 'f' },
     )
     expect(message.subject).not.toMatch(/[\r\n]/)
+  })
+
+  it('is drawn in the branded layout, with the withdraw link in both parts', () => {
+    const message = buildConfirmation(REGISTRATION, EVENT, { from: 'f' })
+    expect(message.html).toContain('/brand/femtech-mark.png')
+    expect(message.html).toMatch(
+      /<a href="[^"]*\/events\/withdraw\?token=[^"]+"[^>]*>Withdraw<\/a>/,
+    )
+    expect(message.text).toMatch(/Withdraw \(http[^)]*\/events\/withdraw\?token=/)
   })
 
   it('replies to the contact address only when there is one', () => {

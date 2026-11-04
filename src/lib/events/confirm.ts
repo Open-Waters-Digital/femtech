@@ -4,9 +4,9 @@ import {
   type Send,
   plain,
   resendSender,
-  safe,
   sendWithTimeout,
 } from '@/lib/email'
+import { renderEmail } from '@/lib/email-layout'
 import { type EventTiming, formatEventWhen } from '@/lib/events/format'
 import { mintWithdrawToken } from '@/lib/events/withdraw-token'
 import { isIndexable, siteUrl } from '@/lib/site-env'
@@ -56,28 +56,34 @@ export function buildConfirmation(
   // reach a second header line.
   const subject = `You’re booked: ${plain(event.title)}`
 
-  const html = [
-    `<p>Hello ${safe(registration.firstName)},</p>`,
-    `<p>Your place at <strong>${safe(event.title)}</strong> is confirmed.</p>`,
-    `<p>${safe(when)}${place ? `<br>${safe(place)}` : ''}</p>`,
-    page ? `<p><a href="${safe(page)}">The event’s page</a></p>` : '',
-    `<p>Can’t make it? <a href="${safe(withdraw)}">Withdraw</a> and we’ll free your place for someone else.</p>`,
-    '<p>FemTech Healthcare Network</p>',
-  ].join('')
-
-  const text = [
-    `Hello ${plain(registration.firstName)},`,
-    '',
-    `Your place at ${plain(event.title)} is confirmed.`,
-    '',
-    plain(when),
-    ...(place ? [plain(place)] : []),
-    ...(page ? ['', `The event’s page: ${page}`] : []),
-    '',
-    `Can’t make it? Withdraw and we’ll free your place for someone else: ${withdraw}`,
-    '',
-    'FemTech Healthcare Network',
-  ].join('\n')
+  const { html, text } = renderEmail({
+    subject,
+    preheader: `${plain(when)}${place ? `, ${plain(place)}` : ''}`,
+    heading: 'You’re booked',
+    blocks: [
+      { kind: 'paragraph', parts: [`Hello ${registration.firstName},`] },
+      {
+        kind: 'paragraph',
+        size: 'lead',
+        parts: ['Your place at ', { strong: event.title }, ' is confirmed.'],
+      },
+      {
+        kind: 'table',
+        rows: [['When', when], ...(place ? [['Where', place] as [string, string]] : [])],
+      },
+      ...(page ? [{ kind: 'button' as const, label: 'The event’s page', href: page }] : []),
+      { kind: 'divider' },
+      {
+        kind: 'smallprint',
+        parts: [
+          'Can’t make it? ',
+          { text: 'Withdraw', href: withdraw },
+          ' and we’ll free your place for someone else.',
+        ],
+      },
+    ],
+    footerNote: 'You’re receiving this because you booked a place on our website.',
+  })
 
   return {
     from: options.from,

@@ -1,10 +1,10 @@
 import { siteEnv } from '@/lib/site-env'
 
 /**
- * Cloudflare Turnstile, in front of the RSVP form.
+ * Cloudflare Turnstile, in front of the RSVP form and the sign-up welcome.
  *
- * The confirmation email goes to the address someone types, so without this a
- * bot could use the form to send our mail to strangers (AGENTS.md backlog).
+ * Both send an email to the address someone types, so without this a
+ * bot could use the forms to send our mail to strangers.
  * Turnstile is free, mostly invisible, and sets no tracking cookie.
  *
  * Configuration:

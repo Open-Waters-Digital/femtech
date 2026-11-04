@@ -1,6 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { type Message, buildMessage, notifyTeam, recipients, safe } from '@/lib/signup/notify'
+import {
+  type Message,
+  buildMessage,
+  notifyTeam,
+  recipients,
+  safe,
+  welcomeLine,
+} from '@/lib/signup/notify'
 
 const MEMBER = {
   id: 7,
@@ -103,16 +110,57 @@ describe('buildMessage', () => {
     expect(message.html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;')
   })
 
+  it('is drawn in the branded layout, with the details in a table', () => {
+    const message = buildMessage(MEMBER, { from: 'f', to: ['t'], repeat: false })
+    expect(message.html).toContain('/brand/femtech-mark.png')
+    expect(message.html).toContain('Sent by the sign-up form on the website.')
+    expect(message.html).toMatch(/Job title<\/td><td[^>]*>Chief Medical Officer<\/td>/)
+    expect(message.text).toContain('Open the member in the admin: ')
+  })
+
   it('says so when the address was already a member', () => {
     const message = buildMessage(MEMBER, { from: 'f', to: ['t'], repeat: true })
     expect(message.subject).toContain('already a member')
   })
 })
 
+describe('the welcome line', () => {
+  const line = (welcome: Parameters<typeof welcomeLine>[0], repeat = false) => {
+    const message = buildMessage(MEMBER, { from: 'f', to: ['t'], repeat, welcome })
+    return message.text.match(/^Welcome email: (.*)$/m)?.[1]
+  }
+
+  it('says when the welcome went', () => {
+    expect(line('sent')).toBe('Sent')
+  })
+
+  it('says when it failed, so the team can write by hand', () => {
+    expect(line('failed')).toMatch(/^Failed to send\. Worth writing to them yourself\.$/)
+  })
+
+  it('says when the check did not pass', () => {
+    expect(line('unverified')).toMatch(/^Not sent: the spam check did not pass/)
+  })
+
+  it('says when mail is not configured', () => {
+    expect(line('unconfigured')).toBe('Not sent: email is not configured')
+  })
+
+  it('says a repeat was not welcomed again, whatever else happened', () => {
+    expect(line(undefined, true)).toBe('Not sent: already a member')
+    expect(line('sent', true)).toBe('Not sent: already a member')
+  })
+
+  it('is in the HTML part too', () => {
+    const message = buildMessage(MEMBER, { from: 'f', to: ['t'], repeat: false, welcome: 'sent' })
+    expect(message.html).toMatch(/Welcome email<\/td><td[^>]*>Sent<\/td>/)
+  })
+})
+
 describe('notifyTeam', () => {
   it('sends through the seam and reports sent', async () => {
     const sent: Message[] = []
-    const result = await notifyTeam(MEMBER, false, async (message) => {
+    const result = await notifyTeam(MEMBER, { repeat: false }, async (message) => {
       sent.push(message)
       return { error: null }
     })
@@ -121,12 +169,14 @@ describe('notifyTeam', () => {
   })
 
   it('reports failed when the provider returns an error', async () => {
-    expect(await notifyTeam(MEMBER, false, async () => ({ error: 'nope' }))).toBe('failed')
+    expect(await notifyTeam(MEMBER, { repeat: false }, async () => ({ error: 'nope' }))).toBe(
+      'failed',
+    )
   })
 
   it('reports failed when the provider throws', async () => {
     expect(
-      await notifyTeam(MEMBER, false, async () => {
+      await notifyTeam(MEMBER, { repeat: false }, async () => {
         throw new Error('network')
       }),
     ).toBe('failed')
@@ -134,17 +184,17 @@ describe('notifyTeam', () => {
 
   it('gives up on a provider that hangs', async () => {
     vi.useFakeTimers()
-    const pending = notifyTeam(MEMBER, false, () => new Promise(() => {}))
+    const pending = notifyTeam(MEMBER, { repeat: false }, () => new Promise(() => {}))
     await vi.advanceTimersByTimeAsync(8_000)
     expect(await pending).toBe('failed')
   })
 
   it('skips quietly outside production when mail is not configured', async () => {
-    expect(await notifyTeam(MEMBER, false)).toBe('skipped')
+    expect(await notifyTeam(MEMBER, { repeat: false })).toBe('skipped')
   })
 
   it('reports unconfigured in production, so the caller can raise it', async () => {
     process.env.SITE_ENV = 'production'
-    expect(await notifyTeam(MEMBER, false)).toBe('unconfigured')
+    expect(await notifyTeam(MEMBER, { repeat: false })).toBe('unconfigured')
   })
 })

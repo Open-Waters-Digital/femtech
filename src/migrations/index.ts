@@ -5,6 +5,7 @@ import * as migration_20261020_083711_signup_page_copy from './20261020_083711_s
 import * as migration_20261020_084351_events from './20261020_084351_events';
 import * as migration_20261020_115235_site_contact_email from './20261020_115235_site_contact_email';
 import * as migration_20261020_115428_event_registrations from './20261020_115428_event_registrations';
+import * as migration_20261104_191943_member_welcome_email from './20261104_191943_member_welcome_email';
 
 export const migrations = [
   {
@@ -40,6 +41,11 @@ export const migrations = [
   {
     up: migration_20261020_115428_event_registrations.up,
     down: migration_20261020_115428_event_registrations.down,
-    name: '20261020_115428_event_registrations'
+    name: '20261020_115428_event_registrations',
+  },
+  {
+    up: migration_20261104_191943_member_welcome_email.up,
+    down: migration_20261104_191943_member_welcome_email.down,
+    name: '20261104_191943_member_welcome_email'
   },
 ];

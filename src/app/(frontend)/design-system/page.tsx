@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
 import type { ReactNode } from 'react'
 
 import { EventCard } from '@/components/events/EventCard'
@@ -16,8 +17,11 @@ import { Section } from '@/components/primitives/Section'
 import { Sparkle } from '@/components/primitives/Sparkle'
 import { SplitText } from '@/components/primitives/SplitText'
 import { Text } from '@/components/primitives/Text'
+import { SignupFormView } from '@/components/signup/SignupFormView'
 import { SocialLinks } from '@/components/social/SocialLinks'
 import { SocialMark } from '@/components/social/SocialMark'
+import { showcaseEmails } from '@/lib/email-fixtures'
+import { isShowcaseAvailable } from '@/lib/site-env'
 import { SOCIAL_PLATFORMS, type SocialProfile } from '@/lib/social'
 
 /**
@@ -52,6 +56,12 @@ const SWATCHES = [
 ] as const
 
 /** Every platform once, so each mark is drawn. Hrefs are placeholders. */
+const SHOWCASE_THANKS = {
+  heading: 'Welcome to the network.',
+  message: 'A placeholder for the thank-you message.',
+  linkedIn: 'https://www.linkedin.com/',
+}
+
 const SHOWCASE_SOCIAL: SocialProfile[] = [
   { platform: 'linkedin', href: 'https://www.linkedin.com/' },
   { platform: 'instagram', href: 'https://www.instagram.com/' },
@@ -89,6 +99,9 @@ function Row({ axis, children }: { axis: string; children: ReactNode }) {
 }
 
 export default function DesignSystemPage() {
+  // Local only: production and preview answer the site's 404 (AGENTS.md).
+  if (!isShowcaseAvailable()) notFound()
+
   return (
     <>
       <SiteHeader tone="dark" pathname="/design-system" />
@@ -417,6 +430,62 @@ export default function DesignSystemPage() {
           </ShowcaseSection>
 
           <ShowcaseSection
+            title="SignupForm"
+            path="@/components/signup/SignupForm (client), SignupFormView (every state)"
+          >
+            <Row axis="editing (the Turnstile placeholder stands where the invisible widget mounts); field errors; sending; asked to tick the check; sent">
+              <div className="grid w-full gap-8 lg:grid-cols-2">
+                <div className="rounded-frame bg-surface-raised p-6">
+                  <SignupFormView
+                    status={{ kind: 'editing' }}
+                    dwellToken=""
+                    thanks={SHOWCASE_THANKS}
+                    showChallengePlaceholder
+                  />
+                </div>
+                <div className="rounded-frame bg-surface-raised p-6">
+                  <SignupFormView
+                    status={{ kind: 'editing' }}
+                    errors={{
+                      firstName: 'Please tell us your first name.',
+                      email: 'Please enter a valid email address.',
+                      emailUpdates: 'Please tick this box to become a member.',
+                    }}
+                    dwellToken=""
+                    thanks={SHOWCASE_THANKS}
+                  />
+                </div>
+                <div className="rounded-frame bg-surface-raised p-6">
+                  <SignupFormView
+                    status={{ kind: 'sending' }}
+                    dwellToken=""
+                    thanks={SHOWCASE_THANKS}
+                  />
+                </div>
+                <div className="rounded-frame bg-surface-raised p-6">
+                  <SignupFormView
+                    status={{
+                      kind: 'failed',
+                      message:
+                        'Please complete the check above the button, then send the form again.',
+                    }}
+                    dwellToken=""
+                    thanks={SHOWCASE_THANKS}
+                    showChallengePlaceholder
+                  />
+                </div>
+                <div>
+                  <SignupFormView
+                    status={{ kind: 'sent' }}
+                    dwellToken=""
+                    thanks={SHOWCASE_THANKS}
+                  />
+                </div>
+              </div>
+            </Row>
+          </ShowcaseSection>
+
+          <ShowcaseSection
             title="SocialLinks and SocialMark"
             path="@/components/social/SocialLinks, SocialMark"
           >
@@ -434,6 +503,38 @@ export default function DesignSystemPage() {
                 (nothing above this line)
               </Text>
             </Row>
+          </ShowcaseSection>
+
+          <ShowcaseSection
+            title="Emails"
+            path="@/lib/email-layout (renderEmail), sample data in @/lib/email-fixtures"
+          >
+            <Text size="sm" tone="subtle">
+              Each email as it is sent, by the function that sends it, with placeholder copy. Framed
+              without scripts, at a phone width and at the layout’s full width.
+            </Text>
+            {showcaseEmails().map(({ label, message }) => (
+              <Row key={label} axis={`${label}. Subject: “${message.subject}”`}>
+                <div className="flex w-full flex-wrap items-start gap-6">
+                  <iframe
+                    title={`${label}, at 390 pixels`}
+                    srcDoc={message.html}
+                    sandbox=""
+                    width={390}
+                    height={1300}
+                    className="rounded-frame border border-line-strong bg-surface"
+                  />
+                  <iframe
+                    title={`${label}, at 640 pixels`}
+                    srcDoc={message.html}
+                    sandbox=""
+                    width={640}
+                    height={1300}
+                    className="hidden rounded-frame border border-line-strong bg-surface lg:block"
+                  />
+                </div>
+              </Row>
+            ))}
           </ShowcaseSection>
         </Container>
       </main>
