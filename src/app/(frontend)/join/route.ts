@@ -5,6 +5,8 @@ import { ValidationError, getPayload } from 'payload'
 import { verifyDwellToken } from '@/lib/dwell-token'
 import { clientIp, rateLimit } from '@/lib/rate-limit'
 import { notifyTeam } from '@/lib/signup/notify'
+import { type WelcomeOutcome, sendWelcome, welcomeContent } from '@/lib/signup/welcome'
+import { verifyTurnstile } from '@/lib/turnstile'
 import {
   type Signup,
   type SignupFieldErrors,
@@ -25,12 +27,17 @@ import {
  *   3. Signed dwell token  HMAC(timestamp) minted on mount, verified here
  *   4. Zod validation      the same schema the form used
  *   5. Save                one row per email; a repeat sign-up changes nothing
- *   6. Notify              email the team, after the response has gone
+ *   6. Welcome             after the response: a new member whose Turnstile
+ *                          check passed is emailed a welcome
+ *   7. Notify              email the team, saying how the welcome went
  *
- * No CAPTCHA. The form writes a row only the team can see and emails only the
- * team, never the address that was typed in, so a bot that got through could
- * fill the list but could not use the site to send mail to anyone else. If that
- * ever happens, Turnstile is the next layer (AGENTS.md, "Pre-launch").
+ * Turnstile gates the welcome and nothing else. The welcome is the one email
+ * that goes to the address someone typed, so without the check anyone could
+ * use the form to send our mail to strangers. But a failed or missing check
+ * does not refuse the sign-up: the form works without JavaScript, which
+ * Turnstile needs, and a person whose browser blocks Cloudflare is still a
+ * person. They are saved, the team is told, and no welcome is sent. A bot that
+ * gets this far can fill the list, as before, but cannot send mail with it.
  *
  * Bot rejections answer exactly as success does. Telling a scraper which layer
  * caught it is free tuning information, and a person never trips them.
@@ -80,7 +87,8 @@ export async function POST(request: Request): Promise<Response> {
 
   // 1. Rate limit. A real person can hit this from a shared office address, so
   //    they are told rather than silently dropped.
-  if (!rateLimit(`join:${clientIp(request.headers)}`).allowed) {
+  const ip = clientIp(request.headers)
+  if (!rateLimit(`join:${ip}`).allowed) {
     logRejection('rate-limit')
     return reply.failed(
       'busy',
@@ -136,9 +144,11 @@ export async function POST(request: Request): Promise<Response> {
     return reply.failed('error', 'Something went wrong. Please try again in a moment.', 500)
   }
 
-  // 6. Notify, once the visitor has their answer. The member is saved, so a
-  //    slow or failed email costs them nothing.
-  after(() => notify(parsed.data, saved))
+  // 6 and 7. Welcome and notify, once the visitor has their answer. The member
+  //    is saved, so a slow check or a failed email costs them nothing. The
+  //    widget writes its token into the form; without JavaScript there is none.
+  const challenge = form.get('cf-turnstile-response')
+  after(() => followUp(parsed.data, saved, typeof challenge === 'string' ? challenge : null, ip))
 
   // The same answer whether or not they were already a member, so the form
   // cannot be used to find out who is on the list.
@@ -191,15 +201,71 @@ async function saveMember(signup: Signup): Promise<{ id: number; repeat: boolean
   }
 }
 
-async function notify(signup: Signup, saved: { id: number; repeat: boolean }): Promise<void> {
-  const result = await notifyTeam({ ...signup, id: saved.id }, saved.repeat)
+/**
+ * Welcome a new member if their check passed. Never throws: anything that goes
+ * wrong is an outcome, recorded on the member and told to the team.
+ */
+async function welcome(
+  signup: Signup,
+  memberId: number,
+  challenge: string | null,
+  ip: string,
+): Promise<WelcomeOutcome> {
+  if (!challenge) {
+    console.warn(`[join] no welcome for member ${memberId}: no turnstile token`)
+    return 'unverified'
+  }
+  const check = await verifyTurnstile(challenge, ip)
+  if (check === 'unavailable') {
+    // An error: either the keys are missing or Cloudflare is down, and nobody
+    // is being welcomed until it is fixed.
+    console.error(`[join] turnstile unavailable; no welcome for member ${memberId}`)
+    return 'unverified'
+  }
+  if (check === 'fail') {
+    console.warn(`[join] no welcome for member ${memberId}: turnstile check failed`)
+    return 'unverified'
+  }
 
+  let content
+  try {
+    const payload = await getPayload({ config: await configPromise })
+    content = welcomeContent(await payload.findGlobal({ slug: 'site-settings', depth: 0 }))
+  } catch (error) {
+    console.error(
+      '[join] could not read the welcome copy',
+      error instanceof Error ? error.message : error,
+    )
+    return 'failed'
+  }
+
+  const result = await sendWelcome(signup, content)
+  if (result === 'unconfigured' || result === 'failed') {
+    console.error(`[join] welcome ${result} for member ${memberId}`)
+  }
+  return result
+}
+
+async function followUp(
+  signup: Signup,
+  saved: { id: number; repeat: boolean },
+  challenge: string | null,
+  ip: string,
+): Promise<void> {
+  // A repeat is never welcomed again: one welcome per address, ever, so the
+  // form cannot be used to send the same person the email over and over.
+  const welcomed = saved.repeat ? undefined : await welcome(signup, saved.id, challenge, ip)
+
+  const result = await notifyTeam(
+    { ...signup, id: saved.id },
+    { repeat: saved.repeat, welcome: welcomed },
+  )
   if (result === 'unconfigured' || result === 'failed') {
     // An error, not a warning: in production nobody is being told about
     // sign-ups. The member is saved and marked, so nothing is lost.
     console.error(`[join] team notification ${result} for member ${saved.id}`)
   }
-  // A repeat keeps the first sign-up's record of how that email went.
+  // A repeat keeps the first sign-up's record of how those emails went.
   if (saved.repeat) return
 
   try {
@@ -207,12 +273,12 @@ async function notify(signup: Signup, saved: { id: number; repeat: boolean }): P
     await payload.update({
       collection: 'members',
       id: saved.id,
-      data: { notification: result },
+      data: { notification: result, welcomeEmail: welcomed },
       overrideAccess: true,
     })
   } catch (error) {
     console.error(
-      '[join] could not record notification',
+      '[join] could not record how the emails went',
       error instanceof Error ? error.message : error,
     )
   }

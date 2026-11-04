@@ -4,10 +4,11 @@ import {
   type Send,
   plain,
   resendSender,
-  safe,
   sendWithTimeout,
 } from '@/lib/email'
+import { renderEmail } from '@/lib/email-layout'
 import { type Signup, industryLabel } from '@/lib/signup/schema'
+import type { WelcomeOutcome } from '@/lib/signup/welcome'
 import { isIndexable, siteUrl } from '@/lib/site-env'
 
 /**
@@ -33,9 +34,31 @@ export function recipients(raw: string | undefined): string[] {
     .filter(Boolean)
 }
 
+/**
+ * What the team is told about the welcome, so a member who did not get one
+ * can be written to by hand.
+ */
+export function welcomeLine(welcome: WelcomeOutcome | undefined, repeat: boolean): string {
+  if (repeat) return 'Not sent: already a member'
+  switch (welcome) {
+    case 'sent':
+      return 'Sent'
+    case 'failed':
+      return 'Failed to send. Worth writing to them yourself.'
+    case 'unverified':
+      return 'Not sent: the spam check did not pass (no JavaScript, or it was blocked). Worth writing to them yourself.'
+    case 'unconfigured':
+      return 'Not sent: email is not configured'
+    case 'skipped':
+      return 'Not sent (development)'
+    case undefined:
+      return '—'
+  }
+}
+
 export function buildMessage(
   member: Signup & { id: number },
-  options: { from: string; to: string[]; repeat: boolean },
+  options: { from: string; to: string[]; repeat: boolean; welcome?: WelcomeOutcome },
 ): Message {
   const name = `${member.firstName} ${member.lastName}`
   const admin = `${siteUrl()}/admin/collections/members/${member.id}`
@@ -47,29 +70,32 @@ export function buildMessage(
     ['Organisation', member.organisation || '—'],
     ['Industry', industryLabel(member.industry) ?? '—'],
     ['Happy to receive emails', member.emailUpdates ? 'Yes' : 'No'],
+    ['Welcome email', welcomeLine(options.welcome, options.repeat)],
   ]
   const subject = options.repeat
     ? `Sign-up again from ${plain(name)} (already a member)`
     : `New sign-up: ${plain(name)}`
 
-  const html = [
-    `<h2>${safe(subject)}</h2>`,
-    options.repeat
-      ? '<p>This email address was already on the members list, so nothing was changed. These are the details they entered this time.</p>'
-      : '',
-    '<table cellpadding="6">',
-    ...rows.map(([k, v]) => `<tr><td><strong>${k}</strong></td><td>${safe(v)}</td></tr>`),
-    '</table>',
-    `<p><a href="${safe(admin)}">Open the member in the admin</a></p>`,
-  ].join('')
-
-  const text = [
+  const { html, text } = renderEmail({
     subject,
-    '',
-    ...rows.map(([k, v]) => `${k}: ${plain(v)}`),
-    '',
-    `Open the member in the admin: ${admin}`,
-  ].join('\n')
+    preheader: `${plain(member.jobTitle)}, ${plain(industryLabel(member.industry) ?? '')}`,
+    heading: subject,
+    blocks: [
+      ...(options.repeat
+        ? [
+            {
+              kind: 'paragraph' as const,
+              parts: [
+                'This email address was already on the members list, so nothing was changed. These are the details they entered this time.',
+              ],
+            },
+          ]
+        : []),
+      { kind: 'table', rows },
+      { kind: 'button', label: 'Open the member in the admin', href: admin },
+    ],
+    footerNote: 'Sent by the sign-up form on the website.',
+  })
 
   return {
     from: options.from,
@@ -90,7 +116,7 @@ export function buildMessage(
  */
 export async function notifyTeam(
   member: Signup & { id: number },
-  repeat: boolean,
+  { repeat, welcome }: { repeat: boolean; welcome?: WelcomeOutcome },
   send?: Send,
 ): Promise<NotifyResult> {
   const apiKey = process.env.RESEND_API_KEY
@@ -102,5 +128,5 @@ export async function notifyTeam(
 
   // Every outbound call gets a timeout. A hung mail provider must not hang
   // the visitor's request; the member is already saved.
-  return sendWithTimeout(sender, buildMessage(member, { from, to, repeat }), TIMEOUT_MS)
+  return sendWithTimeout(sender, buildMessage(member, { from, to, repeat, welcome }), TIMEOUT_MS)
 }

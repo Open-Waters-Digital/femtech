@@ -21,6 +21,16 @@ export function isIndexable(): boolean {
   return siteEnv() === 'production'
 }
 
+/**
+ * Whether `/design-system` renders. Local only: every deployed environment sets
+ * SITE_ENV (production or preview) and gets the site's 404, so the showcase
+ * and its sample emails are never public. Unset, as on a developer's machine,
+ * it renders, including under `pnpm build && pnpm start`.
+ */
+export function isShowcaseAvailable(): boolean {
+  return siteEnv() === 'development'
+}
+
 /** The site's own origin, no trailing slash, for absolute URLs in the head. */
 export function siteUrl(): string {
   return (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '')

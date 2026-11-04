@@ -178,6 +178,10 @@ export interface Member {
    * Whether the team was emailed about this sign-up.
    */
   notification?: ('sent' | 'failed' | 'unconfigured' | 'skipped') | null;
+  /**
+   * Whether this member was sent the welcome email. Empty for members who joined before it existed, or were added here.
+   */
+  welcomeEmail?: ('sent' | 'failed' | 'unconfigured' | 'unverified' | 'skipped') | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -526,6 +530,7 @@ export interface MembersSelect<T extends boolean = true> {
   emailUpdates?: T;
   status?: T;
   notification?: T;
+  welcomeEmail?: T;
   updatedAt?: T;
   createdAt?: T;
 }

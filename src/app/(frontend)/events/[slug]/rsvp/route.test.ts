@@ -23,7 +23,7 @@ const db = vi.hoisted(() => ({
 
 vi.mock('@payload-config', () => ({ default: Promise.resolve({}) }))
 vi.mock('next/server', () => ({ after: (task: () => unknown) => db.afterTasks.push(task) }))
-vi.mock('@/lib/events/turnstile', () => ({ verifyTurnstile: async () => db.turnstile }))
+vi.mock('@/lib/turnstile', () => ({ verifyTurnstile: async () => db.turnstile }))
 vi.mock('@/lib/events/confirm', () => ({
   sendConfirmation: async (registration: unknown) => {
     db.sent.push(registration)

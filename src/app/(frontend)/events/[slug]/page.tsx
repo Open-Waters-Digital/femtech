@@ -17,7 +17,7 @@ import { formatEventWhen } from '@/lib/events/format'
 import { confirmedCounts } from '@/lib/events/places'
 import { getHostedEventBySlug } from '@/lib/events/queries'
 import { rsvpState } from '@/lib/events/rsvp-state'
-import { turnstileConfig } from '@/lib/events/turnstile'
+import { turnstileConfig } from '@/lib/turnstile'
 
 type Params = { params: Promise<{ slug: string }> }
 

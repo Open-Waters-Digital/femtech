@@ -100,6 +100,14 @@ async function seedSiteSettings(payload: Payload): Promise<void> {
         'We welcome you to register your interest and join a community shaping the future of women in healthcare technology.',
       footerCtaLabel: 'Sign Up',
       copyrightHolder: 'Femtech',
+      // The network's LinkedIn page (supplied 2026-11-04). Turns on the footer
+      // mark and the LinkedIn line in the thank-you and the welcome email.
+      social: [
+        {
+          platform: 'linkedin',
+          href: 'https://www.linkedin.com/company/femtech-healthcare-network/',
+        },
+      ],
       ...SIGNUP_COPY,
     },
   })

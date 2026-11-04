@@ -2,22 +2,18 @@
 
 import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react'
 
-import { Button } from '@/components/primitives/Button'
-import { CheckboxField, Field } from '@/components/primitives/Field'
-import { SmartLink } from '@/components/primitives/SmartLink'
-import { SignupThanks, type SignupThanksContent } from '@/components/signup/SignupThanks'
-import { PRIVACY_PATH } from '@/components/layout/navigation'
+import { type SignupStatus, SignupFormView } from '@/components/signup/SignupFormView'
+import type { SignupThanksContent } from '@/components/signup/SignupThanks'
+import { useTurnstile } from '@/components/turnstile/useTurnstile'
 import {
-  INDUSTRIES,
-  SIGNUP_LIMITS,
   type SignupFieldErrors,
   signupInput,
   signupSchema,
   toFieldErrors,
 } from '@/lib/signup/schema'
 
-type Status =
-  { kind: 'editing' } | { kind: 'sending' } | { kind: 'sent' } | { kind: 'failed'; message: string }
+/** How long a quick sender waits for the invisible check before going without it. */
+const CHECK_WAIT_MS = 5_000
 
 /**
  * The sign-up form.
@@ -30,16 +26,26 @@ type Status =
  * JavaScript it validates against the same schema the server uses, posts with
  * fetch, and shows the outcome in place, keeping what was typed if anything
  * goes wrong.
+ *
+ * With a site key it also carries a Turnstile check, which decides only
+ * whether the new member is sent a welcome email. It never stops a sign-up:
+ * if the check cannot load, the form goes without it. The one time it holds
+ * the form back is when Cloudflare asks the visitor to tick the box, because
+ * then they can.
  */
 export function SignupForm({
   thanks,
   initialToken,
+  siteKey,
 }: {
   thanks: SignupThanksContent
   initialToken: string
+  /** Turnstile's site key, or null where it is not configured (no welcome is sent). */
+  siteKey: string | null
 }) {
   const [errors, setErrors] = useState<SignupFieldErrors>({})
-  const [status, setStatus] = useState<Status>({ kind: 'editing' })
+  const [status, setStatus] = useState<SignupStatus>({ kind: 'editing' })
+  const turnstile = useTurnstile(siteKey)
   // Minted by the page as it rendered. Replaced from /join/token only when the
   // server says it has expired.
   const [token, setToken] = useState(initialToken)
@@ -72,9 +78,8 @@ export function SignupForm({
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const form = event.currentTarget
-    const data = new FormData(form)
 
-    const parsed = signupSchema.safeParse(signupInput(data))
+    const parsed = signupSchema.safeParse(signupInput(new FormData(form)))
     if (!parsed.success) {
       const fields = toFieldErrors(parsed.error)
       setErrors(fields)
@@ -86,6 +91,23 @@ export function SignupForm({
 
     setErrors({})
     setStatus({ kind: 'sending' })
+
+    // The invisible check takes a second or two. A visitor quicker than that
+    // waits for it; one Cloudflare wants a tick from is asked; anything else
+    // (blocked, broken, slow) goes without, and is simply not welcomed.
+    if (siteKey && turnstile.state !== 'solved') {
+      const check = await turnstile.settle(CHECK_WAIT_MS)
+      if (check === 'interactive') {
+        setStatus({
+          kind: 'failed',
+          message: 'Please complete the check above the button, then send the form again.',
+        })
+        return
+      }
+    }
+    // Read after the wait, so the token the widget wrote is in it.
+    const data = new FormData(form)
+
     try {
       const response = await fetch('/join', {
         method: 'POST',
@@ -117,147 +139,15 @@ export function SignupForm({
     }
   }
 
-  if (status.kind === 'sent') {
-    return (
-      <div className="rounded-frame bg-surface-raised p-8 md:p-12" role="status">
-        <SignupThanks content={thanks} headingRef={thanksHeading} />
-      </div>
-    )
-  }
-
-  const sending = status.kind === 'sending'
-
   return (
-    <form
-      action="/join"
-      method="post"
-      noValidate
+    <SignupFormView
+      status={status}
+      errors={errors}
+      dwellToken={token}
+      thanks={thanks}
       onSubmit={onSubmit}
-      className="flex flex-col gap-6"
-    >
-      <div className="grid gap-6 md:grid-cols-2">
-        <Field name="firstName" label="First name" required error={errors.firstName}>
-          {(props) => (
-            <input
-              {...props}
-              type="text"
-              autoComplete="given-name"
-              maxLength={SIGNUP_LIMITS.name}
-            />
-          )}
-        </Field>
-        <Field name="lastName" label="Last name" required error={errors.lastName}>
-          {(props) => (
-            <input
-              {...props}
-              type="text"
-              autoComplete="family-name"
-              maxLength={SIGNUP_LIMITS.name}
-            />
-          )}
-        </Field>
-      </div>
-      <div className="grid gap-6 md:grid-cols-2">
-        <Field name="email" label="Email address" required error={errors.email}>
-          {(props) => (
-            <input
-              {...props}
-              type="email"
-              autoComplete="email"
-              inputMode="email"
-              maxLength={SIGNUP_LIMITS.email}
-            />
-          )}
-        </Field>
-        <Field name="phone" label="Phone number" error={errors.phone}>
-          {(props) => (
-            <input {...props} type="tel" autoComplete="tel" maxLength={SIGNUP_LIMITS.phone} />
-          )}
-        </Field>
-      </div>
-      <div className="grid gap-6 md:grid-cols-2">
-        <Field name="jobTitle" label="Job title" required error={errors.jobTitle}>
-          {(props) => (
-            <input
-              {...props}
-              type="text"
-              autoComplete="organization-title"
-              maxLength={SIGNUP_LIMITS.jobTitle}
-            />
-          )}
-        </Field>
-        <Field name="organisation" label="Organisation" error={errors.organisation}>
-          {(props) => (
-            <input
-              {...props}
-              type="text"
-              autoComplete="organization"
-              maxLength={SIGNUP_LIMITS.organisation}
-            />
-          )}
-        </Field>
-      </div>
-      <Field name="industry" label="Industry" required control="select" error={errors.industry}>
-        {(props) => (
-          // An empty first option, so "not chosen" is its own state rather
-          // than a silent "Other". Disabled, so it cannot be chosen back.
-          <select {...props} defaultValue="">
-            <option value="" disabled>
-              Choose your industry
-            </option>
-            {INDUSTRIES.map((industry) => (
-              <option key={industry.value} value={industry.value}>
-                {industry.label}
-              </option>
-            ))}
-          </select>
-        )}
-      </Field>
-
-      <CheckboxField
-        name="emailUpdates"
-        required
-        error={errors.emailUpdates}
-        label="I’d like to receive updates from FemTech Healthcare Network about events, membership and products. I can unsubscribe at any time."
-      />
-
-      {/* Honeypot. Off-screen rather than display:none, which some bots skip;
-          out of the tab order and hidden from assistive technology, so no
-          person reaches it. */}
-      <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">
-        <label>
-          Website
-          <input type="text" name="website" tabIndex={-1} autoComplete="off" />
-        </label>
-      </div>
-      <input type="hidden" name="dwell" value={token} />
-
-      {status.kind === 'failed' ? (
-        <p role="alert" className="text-base text-danger">
-          {status.message}
-        </p>
-      ) : null}
-
-      <div className="flex flex-col items-start gap-4">
-        <Button type="submit" size="lg" disabled={sending}>
-          {sending ? 'Sending…' : 'Become a Member'}
-        </Button>
-        <p className="font-body text-sm text-text-muted">
-          We’ll only use your details to keep you updated about FemTech Healthcare Network.
-          {/* The link waits for the privacy page (delivery item 10): a link
-              to a page that does not exist yet is worse than none. */}
-          {PRIVACY_PATH ? (
-            <>
-              {' '}
-              See our{' '}
-              <SmartLink href={PRIVACY_PATH} className="underline underline-offset-4">
-                Privacy Policy
-              </SmartLink>
-              .
-            </>
-          ) : null}
-        </p>
-      </div>
-    </form>
+      challengeRef={siteKey ? turnstile.containerRef : undefined}
+      thanksHeadingRef={thanksHeading}
+    />
   )
 }

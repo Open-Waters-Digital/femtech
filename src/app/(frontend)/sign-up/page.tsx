@@ -10,6 +10,7 @@ import { SignupForm } from '@/components/signup/SignupForm'
 import { getSiteSettings } from '@/lib/content'
 import { mintDwellToken } from '@/lib/dwell-token'
 import { linkedInUrl } from '@/lib/social'
+import { turnstileConfig } from '@/lib/turnstile'
 
 export const metadata: Metadata = {
   title: 'Sign Up',
@@ -94,6 +95,7 @@ export default async function SignUpPage() {
                 linkedIn: linkedInUrl(settings.social),
               }}
               initialToken={mintDwellToken()}
+              siteKey={turnstileConfig()?.siteKey ?? null}
             />
           </section>
         </Container>

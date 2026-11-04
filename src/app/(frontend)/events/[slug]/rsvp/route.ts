@@ -7,7 +7,7 @@ import { sendConfirmation } from '@/lib/events/confirm'
 import { reservePlace } from '@/lib/events/reserve'
 import { rsvpFieldErrors, rsvpInput, rsvpSchema } from '@/lib/events/rsvp-schema'
 import { CLOSED_MESSAGES } from '@/lib/events/rsvp-state'
-import { verifyTurnstile } from '@/lib/events/turnstile'
+import { verifyTurnstile } from '@/lib/turnstile'
 import { clientIp, rateLimit } from '@/lib/rate-limit'
 
 /**
