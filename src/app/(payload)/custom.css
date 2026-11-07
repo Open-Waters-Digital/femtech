@@ -1,31 +1,205 @@
 /**
- * The admin, in the site's palette.
+ * The admin, on the site's tokens.
  *
- * Payload exposes its theme as CSS variables, so this is a remap rather than a
- * set of overrides. The values restate tokens.css as literals, because this
- * stylesheet is outside the Tailwind @theme cascade and cannot read it. If the
- * palette changes, change this by hand: the no-hex lint rule covers .ts and
- * .tsx only.
+ * Payload draws everything from a handful of custom properties — a 21-step
+ * elevation ramp from the ground to the text, a success ramp, an error ramp, a
+ * body face and three radii — and this file sets them from src/styles/tokens.css
+ * rather than from values of its own. There is one token layer. This file used
+ * to restate the palette as hex literals with a note to "change this by hand";
+ * that was a second layer, and it left seven of Payload's twenty-one steps on
+ * Payload's own grey. The approach is luxury-gardens' (its custom.css carries
+ * the full reasoning).
+ *
+ * tokens.css goes through Tailwind, which emits only the variables something
+ * here references, so the admin receives exactly the tokens named below.
+ * Preflight and the utilities are not imported: both would restyle Payload's
+ * own markup.
+ *
+ * Every rule is unlayered. Payload's styles sit in @layer payload-default, and
+ * an unlayered declaration beats any layered one whatever its specificity.
+ *
+ * Light only (admin.theme in payload.config.ts): the site has no dark palette.
  */
+@import '../../styles/fonts.css';
+@import '../../styles/tokens.css';
+
 :root {
-  /* The cream to ink ramp, lightest to darkest. */
-  --theme-elevation-0: #ffffff;
-  --theme-elevation-50: #f7f1e8;
-  --theme-elevation-100: #efe5d7;
-  --theme-elevation-150: #e8ddcc;
-  --theme-elevation-200: #ddd2c1;
-  --theme-elevation-250: #d1c5af;
-  --theme-elevation-300: #c9bfb1;
-  --theme-elevation-400: #a8a094;
-  --theme-elevation-500: #857a6c;
-  --theme-elevation-600: #665c50;
-  --theme-elevation-700: #4d453c;
-  --theme-elevation-800: #2e2924;
-  --theme-elevation-900: #171411;
-  --theme-elevation-1000: #0d0b09;
-  --theme-bg: #f7f1e8;
-  --theme-input-bg: #ffffff;
-  --theme-text: #171411;
-  --theme-success-500: #3f6228;
-  --theme-error-500: #8c3a30;
+  /* The ground is the page's cream; fields and cards sit on the raised cream,
+   * as the site's form fields do. */
+  --theme-bg: var(--color-surface);
+  --theme-input-bg: var(--color-surface-raised);
+  --theme-text: var(--color-text);
+  --theme-elevation-0: var(--color-surface-raised);
+  --theme-elevation-1000: var(--color-text);
+
+  /* Payload's own light ramp is a neutral white-to-black. The same shape from
+   * the raised cream to the ink is tinted the way the site is tinted. */
+  --theme-elevation-50: color-mix(in oklab, var(--color-text) 5%, var(--color-surface-raised));
+  --theme-elevation-100: color-mix(in oklab, var(--color-text) 10%, var(--color-surface-raised));
+  --theme-elevation-150: color-mix(in oklab, var(--color-text) 15%, var(--color-surface-raised));
+  --theme-elevation-200: color-mix(in oklab, var(--color-text) 20%, var(--color-surface-raised));
+  --theme-elevation-250: color-mix(in oklab, var(--color-text) 25%, var(--color-surface-raised));
+  --theme-elevation-300: color-mix(in oklab, var(--color-text) 30%, var(--color-surface-raised));
+  --theme-elevation-350: color-mix(in oklab, var(--color-text) 35%, var(--color-surface-raised));
+  --theme-elevation-400: color-mix(in oklab, var(--color-text) 40%, var(--color-surface-raised));
+  --theme-elevation-450: color-mix(in oklab, var(--color-text) 45%, var(--color-surface-raised));
+  --theme-elevation-500: color-mix(in oklab, var(--color-text) 50%, var(--color-surface-raised));
+  --theme-elevation-550: color-mix(in oklab, var(--color-text) 55%, var(--color-surface-raised));
+  --theme-elevation-600: color-mix(in oklab, var(--color-text) 60%, var(--color-surface-raised));
+  --theme-elevation-650: color-mix(in oklab, var(--color-text) 65%, var(--color-surface-raised));
+  --theme-elevation-700: color-mix(in oklab, var(--color-text) 70%, var(--color-surface-raised));
+  --theme-elevation-750: color-mix(in oklab, var(--color-text) 75%, var(--color-surface-raised));
+  --theme-elevation-800: color-mix(in oklab, var(--color-text) 80%, var(--color-surface-raised));
+  --theme-elevation-850: color-mix(in oklab, var(--color-text) 85%, var(--color-surface-raised));
+  --theme-elevation-900: color-mix(in oklab, var(--color-text) 90%, var(--color-surface-raised));
+  --theme-elevation-950: color-mix(in oklab, var(--color-text) 95%, var(--color-surface-raised));
+
+  /* Payload's success colour is a blue, and marks a published document and a
+   * saved one. The site's green, at the middle of the ramp, darkening into the
+   * ink beyond it. */
+  --theme-success-50: color-mix(in oklab, var(--color-success) 10%, var(--color-surface-raised));
+  --theme-success-100: color-mix(in oklab, var(--color-success) 20%, var(--color-surface-raised));
+  --theme-success-150: color-mix(in oklab, var(--color-success) 30%, var(--color-surface-raised));
+  --theme-success-200: color-mix(in oklab, var(--color-success) 40%, var(--color-surface-raised));
+  --theme-success-250: color-mix(in oklab, var(--color-success) 50%, var(--color-surface-raised));
+  --theme-success-300: color-mix(in oklab, var(--color-success) 60%, var(--color-surface-raised));
+  --theme-success-350: color-mix(in oklab, var(--color-success) 70%, var(--color-surface-raised));
+  --theme-success-400: color-mix(in oklab, var(--color-success) 80%, var(--color-surface-raised));
+  --theme-success-450: color-mix(in oklab, var(--color-success) 90%, var(--color-surface-raised));
+  --theme-success-500: var(--color-success);
+  --theme-success-550: color-mix(in oklab, var(--color-text) 10%, var(--color-success));
+  --theme-success-600: color-mix(in oklab, var(--color-text) 20%, var(--color-success));
+  --theme-success-650: color-mix(in oklab, var(--color-text) 30%, var(--color-success));
+  --theme-success-700: color-mix(in oklab, var(--color-text) 40%, var(--color-success));
+  --theme-success-750: color-mix(in oklab, var(--color-text) 50%, var(--color-success));
+  --theme-success-800: color-mix(in oklab, var(--color-text) 60%, var(--color-success));
+  --theme-success-850: color-mix(in oklab, var(--color-text) 70%, var(--color-success));
+  --theme-success-900: color-mix(in oklab, var(--color-text) 80%, var(--color-success));
+  --theme-success-950: color-mix(in oklab, var(--color-text) 90%, var(--color-success));
+
+  /* The error ramp, through --color-danger at 650 — about where Payload's own
+   * red sits — and darkening into the ink beyond it. */
+  --theme-error-50: color-mix(in oklab, var(--color-danger) 7.7%, var(--color-surface-raised));
+  --theme-error-100: color-mix(in oklab, var(--color-danger) 15.4%, var(--color-surface-raised));
+  --theme-error-150: color-mix(in oklab, var(--color-danger) 23.1%, var(--color-surface-raised));
+  --theme-error-200: color-mix(in oklab, var(--color-danger) 30.8%, var(--color-surface-raised));
+  --theme-error-250: color-mix(in oklab, var(--color-danger) 38.5%, var(--color-surface-raised));
+  --theme-error-300: color-mix(in oklab, var(--color-danger) 46.2%, var(--color-surface-raised));
+  --theme-error-350: color-mix(in oklab, var(--color-danger) 53.8%, var(--color-surface-raised));
+  --theme-error-400: color-mix(in oklab, var(--color-danger) 61.5%, var(--color-surface-raised));
+  --theme-error-450: color-mix(in oklab, var(--color-danger) 69.2%, var(--color-surface-raised));
+  --theme-error-500: color-mix(in oklab, var(--color-danger) 76.9%, var(--color-surface-raised));
+  --theme-error-550: color-mix(in oklab, var(--color-danger) 84.6%, var(--color-surface-raised));
+  --theme-error-600: color-mix(in oklab, var(--color-danger) 92.3%, var(--color-surface-raised));
+  --theme-error-650: var(--color-danger);
+  --theme-error-700: color-mix(in oklab, var(--color-text) 14.3%, var(--color-danger));
+  --theme-error-750: color-mix(in oklab, var(--color-text) 28.6%, var(--color-danger));
+  --theme-error-800: color-mix(in oklab, var(--color-text) 42.9%, var(--color-danger));
+  --theme-error-850: color-mix(in oklab, var(--color-text) 57.1%, var(--color-danger));
+  --theme-error-900: color-mix(in oklab, var(--color-text) 71.4%, var(--color-danger));
+  --theme-error-950: color-mix(in oklab, var(--color-text) 85.7%, var(--color-danger));
+
+  /* Zodiak, for the few places Payload asks for a display face. The body face
+   * needs no line here: see the rule below. */
+  --font-serif: var(--font-display);
+
+  --style-radius-s: var(--radius-sm);
+  --style-radius-m: var(--radius-button);
+  --style-radius-l: var(--radius-frame);
+}
+
+/* Payload's --font-body and ours share a name, so the token is the mapping.
+ * Payload already sets the body in var(--font-body); saying so again here is
+ * what makes Tailwind emit the token, which it does only for a variable this
+ * file references. Setting the property to itself would be a cycle, and a
+ * cyclic custom property is invalid. */
+body {
+  font-family: var(--font-body);
+}
+
+/* The sign-in page's lockup: the wordmark beside the heart mark, phone first.
+ * Sized here rather than by a utility, because the admin does not load the
+ * site's utilities. A rem in the admin is Payload's root, 12px on a phone and
+ * 13px on a desktop, so these grow with Payload's own form. */
+.ft-admin-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-text);
+}
+
+/* The `wordmark` utility's three declarations, from the same tokens, as the
+ * header sets it. */
+.ft-admin-logo__word {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: var(--tracking-tight);
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.ft-admin-logo .ft-admin-mark {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+@media (width >= 48rem) {
+  .ft-admin-logo__word {
+    font-size: 3.25rem;
+  }
+
+  .ft-admin-logo .ft-admin-mark {
+    width: 3rem;
+    height: 3rem;
+  }
+}
+
+/* The heart mark. The one file the site has is cream, drawn for an ink ground;
+ * as a mask over currentColor it takes the admin's ink instead, so there is no
+ * second copy of the mark to keep in step. */
+.ft-admin-mark {
+  display: block;
+  background-color: currentColor;
+  mask: url('/brand/femtech-mark.png') center / contain no-repeat;
+}
+
+/* The navigation's mark fills whatever box Payload gives its icon: the home
+ * link of the breadcrumb, 18px square (16px on a phone). Payload wraps the
+ * graphic in a span that is a flex item with no content of its own, so it
+ * collapsed to 0 × 0 and took the mask with it; it is told to fill the box. */
+.step-nav__home > span:has(> .ft-admin-icon) {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.ft-admin-icon {
+  width: 100%;
+  height: 100%;
+  color: var(--color-text);
+}
+
+/* A field's help text. Payload sets it in --theme-elevation-400, which on this
+ * ground measured 2.57:1 against the 4.5:1 that text this size needs. The step
+ * is darkened for this text alone rather than across the ramp, because 400 is
+ * also the borders and icons. 650 measures 5.67:1 on the ground. */
+.field-description {
+  color: var(--theme-elevation-650);
+}
+
+/* Focus that Payload removes. Found tabbing through a member's edit view:
+ * breadcrumb links, the account link and the document's tabs drop their
+ * outline under :focus-visible, and a select's control looks the same focused
+ * as not. The breadcrumb's home link is left out: Payload draws its own ring
+ * there, as a border on ::after. */
+a:focus-visible:not(.step-nav__home) {
+  outline: var(--accessibility-outline);
+  outline-offset: var(--accessibility-outline-offset);
+}
+
+/* react-select's own generated class sets `outline: 0 !important` on the
+ * control, so the select's ring is a shadow: the same 2px in the text colour as
+ * Payload's --accessibility-outline. */
+.rs__control:has(input:focus-visible) {
+  box-shadow: 0 0 0 2px var(--theme-text);
 }

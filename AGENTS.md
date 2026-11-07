@@ -165,6 +165,18 @@ Bug fixes, copy changes and dependency bumps do not.
   welcome) is drawn by `lib/email-layout.ts`: an ink masthead with the cream
   mark, a cream card, Georgia and Helvetica in place of the web fonts.
 - ✅ The site's own 404 for any unmatched URL (`(frontend)/[...missing]`).
+- ✅ **The admin on brand** (after luxury-gardens). The sign-in page shows the
+  wordmark beside the heart mark and the breadcrumb shows the mark, in place of
+  Payload's; both are server components in `components/admin/`, the mark drawn
+  as a `currentColor` mask over `public/brand/femtech-mark.png` so the one
+  cream file draws in ink. `(payload)/custom.css` sets Payload's theme variables
+  from `tokens.css` with `color-mix()` and holds no colour literal: the full
+  21-step elevation ramp from the raised cream to the ink, success and error
+  ramps through `--color-success` and `--color-danger`, the radii, Cabinet
+  Grotesk (the shared `--font-body`) and Zodiak. Light only. Field help text is
+  lifted to `--theme-elevation-650` (5.67:1; Payload's step measured 2.57:1),
+  and the focus rings Payload drops on links and selects are restored. Admin
+  tabs carry the site icon and the network's name as `og:site_name`.
 - ✅ **DNS on Cloudflare** since 26 October 2026 (registrar still GoDaddy).
   `femtechhealth.com` redirects to `www` with a Cloudflare redirect rule (301,
   path and query kept); SSL/TLS mode **Full**, not Full (strict), which breaks
@@ -228,7 +240,8 @@ src/
       design-system/       the showcase; local only (404 where SITE_ENV is set)
       [...missing]/        sends unmatched URLs to not-found.tsx
       health/              liveness probe for Docker and Railway
-    (payload)/             Payload's admin and API (generated; custom.css is ours)
+    (payload)/             Payload's admin and API (generated; custom.css is
+                           ours: the admin's palette, from the tokens)
     robots.ts, sitemap.ts  must sit at the app root to be picked up
   proxy.ts                 the Content Security Policy, with a nonce per request
   collections/             Members, Events, EventRegistrations, Media, Videos,
@@ -247,6 +260,7 @@ src/
     signup/                SignupForm (client), SignupFormView (every state),
                            SignupThanks
     turnstile/             useTurnstile: the widget, shared by both forms
+    admin/                 AdminLogo and AdminIcon: the admin's marks
     home/, about/          page sections
   lib/
     content.ts             every read the public pages make
@@ -471,6 +485,10 @@ bundle needs a strong one. Lockfile committed; CI installs frozen.
   class strings (a test fails on a template-built class).
 - **The showcase.** A component is not done until it is on `/design-system`
   with every variant, size and state, in the same change.
+- **The admin reads the tokens.** `(payload)/custom.css` maps Payload's theme
+  variables onto `tokens.css` and copies no value, so a palette change reaches
+  the admin with no second edit. The lint rule does not cover CSS; a colour
+  literal there is still a second token layer.
 - **Dark grounds** use the `ground-dark` utility (through `Section tone` or
   directly), which swaps the focus ring to cream.
 - **Copy:** British English, sentence case for UI, the client's own copy
@@ -623,7 +641,7 @@ exists is worse than none, because it is trusted.
 
 <!-- BEGIN:nextjs-agent-rules -->
 
-# This is NOT the Next.js you know
+## This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
 
