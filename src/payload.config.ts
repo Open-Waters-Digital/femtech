@@ -25,6 +25,14 @@ export default buildConfig({
     importMap: {
       baseDir: path.resolve(dirname),
     },
+    components: {
+      // The site's own marks, in place of Payload's. Server components; their
+      // styles are in src/app/(payload)/custom.css.
+      graphics: {
+        Logo: '/components/admin/AdminLogo#AdminLogo',
+        Icon: '/components/admin/AdminIcon#AdminIcon',
+      },
+    },
     // Light only: the site has no dark palette for a dark admin to borrow.
     theme: 'light',
     // Payload's own avatar, not Gravatar: no request to gravatar.com, which the
@@ -34,6 +42,15 @@ export default buildConfig({
     meta: {
       titleSuffix: ' – FemTech Healthcare Network',
       defaultOGImageType: 'off',
+      // Replaces Payload's "Payload App" defaults.
+      openGraph: {
+        siteName: 'FemTech Healthcare Network',
+        title: 'FemTech Healthcare Network',
+        description: 'Content management for FemTech Healthcare Network.',
+      },
+      // The site's icon, named here so the admin does not depend on which of
+      // Payload's and the site's would otherwise win.
+      icons: [{ rel: 'icon', type: 'image/png', url: '/icon.png' }],
       // robots.txt stops /admin being crawled, but not a linked URL being
       // indexed. This is the part that keeps it out.
       robots: { index: false, follow: false },
