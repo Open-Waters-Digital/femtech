@@ -2,9 +2,11 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import type { ReactNode } from 'react'
 
+import { AnalyticsObjectionControl } from '@/components/analytics/AnalyticsObjectionControl'
 import { EventCard } from '@/components/events/EventCard'
 import { RsvpFormView } from '@/components/events/RsvpFormView'
 import { SAMPLE_EVENTS } from '@/components/events/fixtures'
+import { Main } from '@/components/layout/Main'
 import { SiteHeader } from '@/components/layout/SiteHeader'
 import { Button } from '@/components/primitives/Button'
 import { Container } from '@/components/primitives/Container'
@@ -105,7 +107,7 @@ export default function DesignSystemPage() {
   return (
     <>
       <SiteHeader tone="dark" pathname="/design-system" />
-      <main id="main" className="pt-36 pb-16">
+      <Main pageType="other" className="pt-36 pb-16">
         <Container>
           <Heading level={1} size="2xl">
             Design system
@@ -486,6 +488,22 @@ export default function DesignSystemPage() {
           </ShowcaseSection>
 
           <ShowcaseSection
+            title="AnalyticsObjectionControl"
+            path="@/components/analytics/AnalyticsObjectionControl (client), for the privacy page"
+          >
+            <Row axis="live: this browser's own choice (pressing it stores the choice and reloads)">
+              <AnalyticsObjectionControl />
+            </Row>
+            <Row axis="measuring; objected; without JavaScript (disabled, and says why)">
+              <div className="grid w-full gap-8 lg:grid-cols-3">
+                <AnalyticsObjectionControl preview="measuring" />
+                <AnalyticsObjectionControl preview="objected" />
+                <AnalyticsObjectionControl preview="no-script" />
+              </div>
+            </Row>
+          </ShowcaseSection>
+
+          <ShowcaseSection
             title="SocialLinks and SocialMark"
             path="@/components/social/SocialLinks, SocialMark"
           >
@@ -537,7 +555,7 @@ export default function DesignSystemPage() {
             ))}
           </ShowcaseSection>
         </Container>
-      </main>
+      </Main>
     </>
   )
 }

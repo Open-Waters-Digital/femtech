@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 
+import { Main } from '@/components/layout/Main'
 import { SiteHeader } from '@/components/layout/SiteHeader'
 import { Container } from '@/components/primitives/Container'
 import { Eyebrow } from '@/components/primitives/Eyebrow'
@@ -33,7 +34,7 @@ export default async function SignUpPage() {
   return (
     <>
       <SiteHeader tone="dark" pathname="/sign-up" />
-      <main id="main" className="pt-36 pb-16 md:pt-48">
+      <Main pageType="contact" className="pt-36 pb-16 md:pt-48">
         <Container className="grid gap-16 lg:grid-cols-12 lg:gap-12">
           <div className="flex flex-col gap-12 lg:col-span-5">
             <div className="flex flex-col gap-6">
@@ -99,7 +100,7 @@ export default async function SignUpPage() {
             />
           </section>
         </Container>
-      </main>
+      </Main>
     </>
   )
 }

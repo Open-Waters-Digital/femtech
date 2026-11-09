@@ -11,6 +11,12 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# packages: read lets GITHUB_TOKEN install @open-waters-digital/analytics, once
+# the package grants this repository read access under "Manage Actions access".
+permissions:
+  contents: read
+  packages: read
+
 jobs:
   quality:
     runs-on: ubuntu-latest
@@ -42,7 +48,15 @@ jobs:
         with:
           node-version-file: .node-version
           cache: pnpm
+          # Writes a user-level .npmrc for the private @open-waters-digital
+          # scope, reading NODE_AUTH_TOKEN. pnpm 11.5.3+ will not expand a token
+          # from the committed .npmrc, so this is where CI's credential lives.
+          registry-url: https://npm.pkg.github.com
+          scope: '@open-waters-digital'
       - run: pnpm install --frozen-lockfile
+        env:
+          # The run's own token, for @open-waters-digital/analytics.
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Apply migrations to a clean database
         run: pnpm run migrate
       - name: Quality gate
@@ -70,7 +84,14 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Build the image, with no database available to the build
-        run: docker build --build-arg NEXT_PUBLIC_SITE_URL=http://localhost:3000 -t femtech:ci .
+        # The token is passed by name, so it is read from the environment and
+        # never written into the command line.
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          docker build --build-arg NODE_AUTH_TOKEN \
+            --build-arg NEXT_PUBLIC_SITE_URL=http://localhost:3000 \
+            -t femtech:ci .
       - name: Run the release command from inside the image
         run: |
           docker run --rm \

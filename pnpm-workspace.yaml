@@ -5,6 +5,8 @@ allowBuilds:
   esbuild: true
   sharp: true
   unrs-resolver: true
+  # From posthog-js. Its script only prints a banner.
+  core-js: false
 # pnpm holds back releases younger than its minimum age. The Payload 3.90.1 set
 # is pinned deliberately and has to be exempt, or install resolves backwards.
 minimumReleaseAgeExclude:
@@ -18,3 +20,7 @@ minimumReleaseAgeExclude:
   - '@payloadcms/translations@3.90.1'
   - '@payloadcms/ui@3.90.1'
   - payload@3.90.1
+  # Our own packages, published by our own release workflow: the release-age
+  # wait guards against a third party's package being hijacked, and waiting on
+  # these would only delay our own fixes.
+  - '@open-waters-digital/*'

@@ -204,7 +204,13 @@ export function Join({ about }: { about: About }) {
           {about.joinTitle}
         </Heading>
         <p className="max-w-measure text-lead leading-relaxed text-balance">{about.joinBody}</p>
-        <Button href="/sign-up" surface="inverse" size="lg">
+        <Button
+          href="/sign-up"
+          surface="inverse"
+          size="lg"
+          data-cta="join"
+          data-cta-location="about-join"
+        >
           {about.joinCtaLabel}
         </Button>
       </Container>

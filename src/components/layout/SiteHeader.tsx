@@ -82,7 +82,7 @@ export function SiteHeader({
               on one element is decided by stylesheet order, and it lost. */}
           {isCurrent(SIGN_UP_PATH, pathname) ? null : (
             <div className="hidden md:block">
-              <Button href={SIGN_UP_PATH} size="sm">
+              <Button href={SIGN_UP_PATH} size="sm" data-cta="join" data-cta-location="header">
                 Sign Up
               </Button>
             </div>

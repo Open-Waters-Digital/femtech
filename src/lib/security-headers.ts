@@ -25,9 +25,40 @@ export type CspOptions = {
   development: boolean
   /** Served over https (a deployment): ask the browser to upgrade any http subresource. */
   https: boolean
+  /**
+   * `NEXT_PUBLIC_POSTHOG_HOST`, the analytics proxy. Its origin is admitted for
+   * scripts and connections; unset or invalid, nothing is added.
+   */
+  analyticsHost?: string | undefined
 }
 
-export function contentSecurityPolicy({ nonce, development, https }: CspOptions): string {
+/**
+ * The analytics host's origin, from `NEXT_PUBLIC_POSTHOG_HOST`. Null when it is
+ * unset or not an http(s) URL, so a site with analytics dormant names no host
+ * and the policy cannot disagree with the loader about which one.
+ */
+export function analyticsOrigin(host: string | undefined): string | null {
+  if (!host) return null
+  try {
+    const url = new URL(host)
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') return null
+    return url.origin
+  } catch {
+    return null
+  }
+}
+
+export function contentSecurityPolicy({
+  nonce,
+  development,
+  https,
+  analyticsHost,
+}: CspOptions): string {
+  const analytics = analyticsOrigin(analyticsHost)
+  // The package's own chunk is same-origin and admitted by 'strict-dynamic';
+  // this covers what posthog-js loads from the proxy, and browsers without
+  // 'strict-dynamic'.
+  const extra = analytics ? [analytics] : []
   const directives: [string, ...string[]][] = [
     ['default-src', "'self'"],
     [
@@ -38,6 +69,7 @@ export function contentSecurityPolicy({ nonce, development, https }: CspOptions)
       // Ignored by browsers that honour 'strict-dynamic'; the allow-list for
       // those that do not.
       TURNSTILE_ORIGIN,
+      ...extra,
       ...(development ? ["'unsafe-eval'"] : []),
     ],
     ['style-src', "'self'", "'unsafe-inline'"],
@@ -47,7 +79,7 @@ export function contentSecurityPolicy({ nonce, development, https }: CspOptions)
     ['img-src', "'self'", 'data:', 'blob:'],
     ['media-src', "'self'", 'blob:'],
     ['font-src', "'self'"],
-    ['connect-src', "'self'"],
+    ['connect-src', "'self'", ...extra],
     ['frame-src', TURNSTILE_ORIGIN],
     ['worker-src', "'self'", 'blob:'],
     ['object-src', "'none'"],

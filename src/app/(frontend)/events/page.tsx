@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 
 import { EventCard } from '@/components/events/EventCard'
 import { SIGN_UP_PATH } from '@/components/layout/navigation'
+import { Main } from '@/components/layout/Main'
 import { SiteHeader } from '@/components/layout/SiteHeader'
 import { Button } from '@/components/primitives/Button'
 import { Container } from '@/components/primitives/Container'
@@ -34,7 +35,7 @@ export default async function EventsPage() {
   return (
     <>
       <SiteHeader tone="dark" pathname="/events" />
-      <main id="main" className="pt-36 pb-16 md:pt-48">
+      <Main pageType="listing" className="pt-36 pb-16 md:pt-48">
         <Container className="flex flex-col gap-16">
           <div className="flex max-w-statement flex-col gap-6">
             <Heading level={1} size="2xl">
@@ -74,7 +75,9 @@ export default async function EventsPage() {
                 Events – coming soon.
               </Heading>
               <Text>Sign up and you’ll be the first to hear when the next one is announced.</Text>
-              <Button href={SIGN_UP_PATH}>Sign Up</Button>
+              <Button href={SIGN_UP_PATH} data-cta="join" data-cta-location="events-coming-soon">
+                Sign Up
+              </Button>
             </section>
           )}
 
@@ -93,7 +96,7 @@ export default async function EventsPage() {
             </section>
           ) : null}
         </Container>
-      </main>
+      </Main>
     </>
   )
 }

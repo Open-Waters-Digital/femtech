@@ -50,6 +50,14 @@ export default defineRailway(() => {
       S3_BUCKET: preserve(),
       S3_ENDPOINT: preserve(),
       S3_REGION: preserve(),
+      // Analytics. Both are build arguments as well, so a redeploy is needed
+      // after setting them. The key stays unset until the privacy page names
+      // PostHog and carries the objection control.
+      NEXT_PUBLIC_POSTHOG_KEY: preserve(),
+      NEXT_PUBLIC_POSTHOG_HOST: preserve(),
+      // Reads @open-waters-digital/analytics from GitHub Packages at install.
+      // A build argument only, confined to the install stages.
+      NODE_AUTH_TOKEN: preserve(),
       // SEED_ADMIN_* are deliberately absent: the seed is run from a machine,
       // never by a deploy.
     },

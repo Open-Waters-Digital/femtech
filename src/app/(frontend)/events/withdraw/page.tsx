@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import NextLink from 'next/link'
 import { getPayload } from 'payload'
 
+import { Main } from '@/components/layout/Main'
 import { SiteHeader } from '@/components/layout/SiteHeader'
 import { Button } from '@/components/primitives/Button'
 import { Container } from '@/components/primitives/Container'
@@ -35,7 +36,7 @@ export default async function WithdrawPage({ searchParams }: Props) {
   return (
     <>
       <SiteHeader tone="dark" pathname="/events/withdraw" />
-      <main id="main" className="pt-36 pb-16 md:pt-48">
+      <Main pageType="other" className="pt-36 pb-16 md:pt-48">
         <Container width="statement" className="flex flex-col items-start gap-6">
           {withdrawal.state === 'invalid' ? (
             <>
@@ -89,7 +90,7 @@ export default async function WithdrawPage({ searchParams }: Props) {
             All events
           </NextLink>
         </Container>
-      </main>
+      </Main>
     </>
   )
 }

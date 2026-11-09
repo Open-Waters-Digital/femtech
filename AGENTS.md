@@ -184,7 +184,42 @@ Bug fixes, copy changes and dependency bumps do not.
   `lyncdiscover`, `sip`, `msoid`, `email`, the SRVs, MX, SPF, DMARC) must stay
   **DNS only**: proxying them breaks Outlook set-up and Teams sign-in. The root
   and `www` still point at Webflow until the cut-over (delivery item 12).
-- 🟡 Analytics. See "Delivery order".
+- ✅ **Analytics — built, dormant** (`add-analytics`).
+  `@open-waters-digital/analytics` 1.2.0 (taxonomy v3) on cookieless PostHog
+  EU, through a managed proxy.
+  - **The gate**, `components/analytics/Analytics.tsx` in the root layout:
+    a production build, `NEXT_PUBLIC_POSTHOG_KEY` and `NEXT_PUBLIC_POSTHOG_HOST`
+    both set, `SITE_ENV=production` (decided on the server and passed in),
+    unframed, and the page not `noindex`. `spa: true`, with `pageChanged()` on
+    each client navigation (`next/link`), except into a `noindex` page.
+    `regulated: false` (a community, not a healthcare provider; the forms are
+    `ph-no-capture` either way), heatmaps and replay off.
+  - **The CSP** admits the proxy's origin in `script-src` and `connect-src`,
+    read from `NEXT_PUBLIC_POSTHOG_HOST`; unset, nothing is added.
+  - **Page types** come from `<Main pageType>` (`components/layout/Main.tsx`),
+    required, and ESLint refuses a bare `<main>` in a page: `/` home,
+    `/about-us` about, `/sign-up` contact, `/events` listing, everything else
+    other.
+  - **CTAs:** every join link is `data-cta="join"` with its location (header,
+    menu, footer, footer-nav, about-join, events-coming-soon, not-sent); an
+    event's RSVP button is `event-rsvp`.
+  - **Forms:** `signup` and `rsvp` carry `data-form-id` and `ph-no-capture`
+    and report `formSubmitted` / `formErrorShown` with field names and an
+    error class only. The sign-up form alone sends `ow_attribution`.
+  - **`lead_submitted`** (`lib/analytics/lead.ts`) is sent last in `/join`'s
+    `after()` follow-up, for a new member only, with `form_id: signup`,
+    `lead_type: membership` and the v3 channel. A repeat, a bot drop, a
+    rejection or an RSVP sends none. The attribution is never stored, emailed
+    or logged.
+  - **The objection control**, `AnalyticsObjectionControl`, is on
+    `/design-system`, waiting for the privacy page.
+  - **Measured:** the gate and listener add 5.6 KB gzipped to every page;
+    `posthog-js` is 102 KB gzipped, imported when the browser is idle and only
+    when the gate opens. `/` at 390px and 1440px, 4x CPU and slow 4G, median of
+    three: LCP 876/1,396 ms unset, 872/1,384 ms set; TBT 11 ms both. No CSP
+    violation in a production run.
+  - 🧱 **Dormant**: the key stays unset on Railway until the activation gate
+    below is met.
 
 ## Delivery order
 
@@ -206,10 +241,10 @@ Locked. Revisit only if a dependency changes.
    once deployed.
 10. 🟡 Privacy page, from the client's wording (see Open questions). Needed
     before the form collects real data, and before analytics.
-11. 🟡 Analytics, following the `openwaters-analytics` skill: the client's
-    PostHog organisation, `@open-waters-digital/analytics` with
-    `lead_submitted` from `/join`, the `data-page-type`, `data-cta` and
-    `data-form-id` markup, and the objection control on the privacy page.
+11. ✅ Analytics (`add-analytics`), built and dormant: the package, the gate,
+    the CSP, the markup, `lead_submitted` from `/join` and the objection
+    control. 🟡 Switching it on waits for the client's PostHog organisation,
+    the proxy, and the privacy page (item 10) carrying the control.
 12. 🧱 Pre-launch hardening, then the domain cuts over.
 
 ## Post-launch backlog
@@ -253,13 +288,16 @@ src/
                            Section, Paragraphs, PayloadImage, Sparkle, SmartLink,
                            SplitText, RollingLabel
     layout/                SiteHeader, MobileMenu, SiteFooter, RevealObserver,
-                           ScrollProgress, navigation.ts
+                           ScrollProgress, Main (every page's <main>, with
+                           its analytics page type), navigation.ts
     social/                SocialLinks, SocialMark (Simple Icons paths, CC0)
     events/                EventCard, RsvpPanel, RsvpForm (client),
                            RsvpFormView (every state, for the showcase)
     signup/                SignupForm (client), SignupFormView (every state),
                            SignupThanks
     turnstile/             useTurnstile: the widget, shared by both forms
+    analytics/             Analytics (the gate; renders nothing) and
+                           AnalyticsObjectionControl (for the privacy page)
     admin/                 AdminLogo and AdminIcon: the admin's marks
     home/, about/          page sections
   lib/
@@ -277,6 +315,8 @@ src/
     email-fixtures.ts      sample emails for the showcase
     turnstile.ts           server verification, for RSVP and the welcome
     security-headers.ts    the CSP and the fixed security headers
+    analytics/             lead (lead_submitted for a new member),
+                           form-errors (form_error_shown's classes)
     dwell-token.ts, rate-limit.ts   sign-up defences
     scroll-progress.ts     scroll ranges and the scrub glide, for ScrollProgress
     revalidate.ts, uploads.ts, storage.ts, site-env.ts, text.ts
@@ -288,6 +328,8 @@ src/
   migrations/              generated, committed, applied by Railway pre-deploy
 scripts/
   seed.ts                  idempotent seed: admin, assets, all copy
+  docker-install.sh        the image's install, with the GitHub Packages token
+                           written, used and removed in one step
   seed-assets/             the images and video the seed uploads
 public/fonts, public/brand Zodiak, Cabinet Grotesk, the mark
 .railway/railway.ts        Railway service config (NOT applied on push)
@@ -308,7 +350,7 @@ public/fonts, public/brand Zodiak, Cabinet Grotesk, the mark
 | Tests           | Vitest (unit)                                            | ✅     |
 | Package manager | pnpm 11.5.2, Node 24.20.0                                | ✅     |
 | Deploy          | Railway, Dockerfile, `.railway/railway.ts`               | 🟡     |
-| Analytics       | PostHog via `@open-waters-digital/analytics`             | 🟡     |
+| Analytics       | PostHog via `@open-waters-digital/analytics` (dormant)   | ✅     |
 | Error tracking  | None yet                                                 | 🧱     |
 
 Same versions as fionacorbett and luxury-gardens on purpose: one set of
@@ -433,7 +475,8 @@ form cannot reveal who is attending.
   reason. Zod runs `jitless` for the same reason.
 - One third-party script: Cloudflare Turnstile, on hosted event pages and
   `/sign-up` only, loaded by `useTurnstile` once the form is near the screen.
-  Otherwise none until analytics, which loads after the page is interactive.
+  PostHog, once switched on, is bundled, loaded same-origin when the browser
+  is idle, and sends to the network's own proxy subdomain.
 - **Emails** go through `renderEmail` (`lib/email-layout.ts`): tables, inline
   styles, colours from `EMAIL_COLOURS` in `lib/brand-constants.ts` (a test
   keeps them equal to `tokens.css`), every value escaped by the block that
@@ -540,8 +583,11 @@ Types: `feat`, `fix`, `refactor`, `perf`, `docs`, `test`, `build`, `ci`,
 - **Cloudflare Turnstile** sees the visitor's IP address and browser signals on
   `/sign-up` and on a hosted event's page, and sets no tracking cookie. The privacy notice must
   name it (delivery item 10).
-- **Not collected:** no cookies, no tracking, no analytics until delivery
-  item 11.
+- **Analytics is cookieless and receives no form contents.** No
+  identification and no person profiles; events carry field names and error
+  classes, never a value. The only storage is the visit's attribution in
+  session storage and, once a visitor uses the control, their objection in
+  local storage. Dormant until the privacy page names PostHog.
 - **Retention:** not decided (Open questions).
 - **Never:** email members who have not ticked the checkbox; log personal data;
   send form contents to analytics; give `members` public read or create.
@@ -550,6 +596,17 @@ Types: `feat`, `fix`, `refactor`, `perf`, `docs`, `test`, `build`, `ci`,
 
 - 🧱 **Privacy page**, from the client's wording, linked beside the form. The
   form collects personal data, and analytics needs the objection control.
+- 🧱 **Analytics activation gate.** `NEXT_PUBLIC_POSTHOG_KEY` stays unset on
+  Railway until: the PostHog organisation (owned by the network) and project
+  per `analytics-contract`'s onboarding checklist; the proxy live (e.g.
+  `e.femtechhealth.com`); the privacy page published naming PostHog, with
+  `AnalyticsObjectionControl`; then the skill's _Prove it works_ against
+  production.
+- 🧱 **Every install needs `NODE_AUTH_TOKEN`** (`read:packages`) for the
+  private package: `~/.npmrc` locally, the run's `GITHUB_TOKEN` in CI once the
+  package grants this repository Actions access, and a Railway variable for the
+  Docker build. `scripts/docker-install.sh` keeps it out of the log; the final
+  image's history was checked to carry none of it.
 - 🧱 **Email deliverability.** Resend domain with SPF, DKIM and DMARC, checked
   against a real inbox. A notification in spam is a lost sign-up.
 - 🧱 **Error tracking with alerting.** A silently broken form is a silently
@@ -563,8 +620,8 @@ Types: `feat`, `fix`, `refactor`, `perf`, `docs`, `test`, `build`, `ci`,
   the Microsoft 365 names are not ours to promise https for), nosniff,
   Referrer-Policy and Permissions-Policy are set in `next.config.ts`. Checked
   in a production build across the public pages and the admin with no
-  violations. **The analytics proxy host must be added when analytics lands**
-  (delivery item 11), or it will be blocked.
+  violations. The analytics proxy's origin is added from
+  `NEXT_PUBLIC_POSTHOG_HOST` (`add-analytics`), checked with no violations.
 - 🧱 **Remove the service's `*.up.railway.app` address** once the domain is
   live. Behind Cloudflare, `clientIp` trusts `cf-connecting-ip`; a request
   straight to Railway could forge it and sidestep the rate limits. Remove the

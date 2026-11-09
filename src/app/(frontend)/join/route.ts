@@ -2,6 +2,7 @@ import configPromise from '@payload-config'
 import { after } from 'next/server'
 import { ValidationError, getPayload } from 'payload'
 
+import { leadProperties, sendLead } from '@/lib/analytics/lead'
 import { verifyDwellToken } from '@/lib/dwell-token'
 import { clientIp, rateLimit } from '@/lib/rate-limit'
 import { notifyTeam } from '@/lib/signup/notify'
@@ -10,6 +11,8 @@ import { verifyTurnstile } from '@/lib/turnstile'
 import {
   type Signup,
   type SignupFieldErrors,
+  attributionInput,
+  attributionSchema,
   signupInput,
   signupSchema,
   toFieldErrors,
@@ -30,6 +33,8 @@ import {
  *   6. Welcome             after the response: a new member whose Turnstile
  *                          check passed is emailed a welcome
  *   7. Notify              email the team, saying how the welcome went
+ *   8. Lead                a new member is counted in analytics, with the
+ *                          channel classified from `ow_attribution`
  *
  * Turnstile gates the welcome and nothing else. The welcome is the one email
  * that goes to the address someone typed, so without the check anyone could
@@ -128,11 +133,17 @@ export async function POST(request: Request): Promise<Response> {
     return reply.accepted()
   }
 
-  // 4. Schema.
+  // 4. Schema. The attribution is validated apart from the sign-up, so it
+  //    cannot ride along into the member, an email or a log.
   const parsed = signupSchema.safeParse(signupInput(form))
   if (!parsed.success) {
     logRejection('schema')
     return reply.invalid(toFieldErrors(parsed.error))
+  }
+  const attribution = attributionSchema.safeParse(attributionInput(form))
+  if (!attribution.success) {
+    logRejection('schema', 'attribution')
+    return reply.invalid({})
   }
 
   // 5. Save.
@@ -148,7 +159,15 @@ export async function POST(request: Request): Promise<Response> {
   //    is saved, so a slow check or a failed email costs them nothing. The
   //    widget writes its token into the form; without JavaScript there is none.
   const challenge = form.get('cf-turnstile-response')
-  after(() => followUp(parsed.data, saved, typeof challenge === 'string' ? challenge : null, ip))
+  after(() =>
+    followUp(
+      parsed.data,
+      saved,
+      typeof challenge === 'string' ? challenge : null,
+      ip,
+      attribution.data,
+    ),
+  )
 
   // The same answer whether or not they were already a member, so the form
   // cannot be used to find out who is on the list.
@@ -251,6 +270,7 @@ async function followUp(
   saved: { id: number; repeat: boolean },
   challenge: string | null,
   ip: string,
+  attribution: string | undefined,
 ): Promise<void> {
   // A repeat is never welcomed again: one welcome per address, ever, so the
   // form cannot be used to send the same person the email over and over.
@@ -281,5 +301,15 @@ async function followUp(
       '[join] could not record how the emails went',
       error instanceof Error ? error.message : error,
     )
+  }
+
+  // 8. Counted last, so nothing analytics does can hold up or alter the emails
+  //    or the member's record. A new member only: a repeat saves nothing, so
+  //    it is not a new lead. sendLead never throws and gives up within five
+  //    seconds; the catch is for anything around it.
+  try {
+    await sendLead(leadProperties({ ow_attribution: attribution }))
+  } catch (error) {
+    console.error('[join] lead event failed', error instanceof Error ? error.name : 'unknown')
   }
 }

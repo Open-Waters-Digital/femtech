@@ -44,6 +44,26 @@ const eslintConfig = [
     },
   },
   {
+    // Pages render <Main pageType>, never a bare <main>: the page type is what
+    // analytics reports a view as, and Main makes it required. Repeats the
+    // colour rule, because a later block's options replace an earlier one's.
+    files: ['src/app/(frontend)/**/*.tsx'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'Literal[value=/#[0-9a-fA-F]{6}\\b/]',
+          message: 'Hard-coded colour. Use a design token from src/styles/tokens.css.',
+        },
+        {
+          selector: 'JSXOpeningElement[name.name="main"]',
+          message:
+            'Use <Main pageType> from @/components/layout/Main, so the page declares its type.',
+        },
+      ],
+    },
+  },
+  {
     // Payload generates migrations with a fixed ({ db, payload, req }) signature,
     // so unused args here are the API's shape rather than a mistake.
     files: ['src/migrations/**/*.ts'],
