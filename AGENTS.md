@@ -185,7 +185,7 @@ Bug fixes, copy changes and dependency bumps do not.
   **DNS only**: proxying them breaks Outlook set-up and Teams sign-in. The root
   and `www` still point at Webflow until the cut-over (delivery item 12).
 - ✅ **Analytics — built, dormant** (`add-analytics`).
-  `@open-waters-digital/analytics` 1.2.0 (taxonomy v3) on cookieless PostHog
+  `@open-waters-digital/analytics` 1.2.1 (taxonomy v3) on cookieless PostHog
   EU, through a managed proxy.
   - **The gate**, `components/analytics/Analytics.tsx` in the root layout:
     a production build, `NEXT_PUBLIC_POSTHOG_KEY` and `NEXT_PUBLIC_POSTHOG_HOST`

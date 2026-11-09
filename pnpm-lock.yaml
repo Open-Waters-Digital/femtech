@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@open-waters-digital/analytics':
-        specifier: 1.2.0
-        version: 1.2.0(posthog-js@1.438.7(@types/react@19.2.14)(react@19.2.6))(posthog-node@5.55.1)
+        specifier: 1.2.1
+        version: 1.2.1(posthog-js@1.438.7(@types/react@19.2.14)(react@19.2.6))(posthog-node@5.55.1)
       '@payloadcms/db-postgres':
         specifier: 3.90.1
         version: 3.90.1(payload@3.90.1(graphql@16.14.2)(typescript@6.0.3))
@@ -1480,8 +1480,8 @@ packages:
     resolution: {integrity: sha512-nn5ozdjYQpUCZlWGuxcJY/KpxkWQs4DcbMCmKojjyrYDEAGy4Ce19NN4v5MduafTwJlbKc99UA8YhSVqq9yPZA==}
     engines: {node: '>=12.4.0'}
 
-  '@open-waters-digital/analytics@1.2.0':
-    resolution: {integrity: sha512-2ilD7jkF7pdu7Q7/pQk+zhIwf+TSYVPvZaYoxRQF0jzOG+pNmPe+9gHYlhExYhIi5eWpTmnnzDP4pab72ZC1Nw==, tarball: https://npm.pkg.github.com/download/@open-waters-digital/analytics/1.2.0/9a3a8e24441b14114fd1e286c13972e764934a44}
+  '@open-waters-digital/analytics@1.2.1':
+    resolution: {integrity: sha512-9lamfJjIAoiEmVjO8OAWfn1P2pHIgiwG4qYM1ENrbZ/1jcna+bX93FgsYGPPd0e3b0nQXvgYRfPzGIiimWhokA==, tarball: https://npm.pkg.github.com/download/@open-waters-digital/analytics/1.2.1/ba26bc8736153b4f6919be1f1a98590f19478816}
     engines: {node: '>=22.12.0'}
     peerDependencies:
       posthog-js: '>=1.433.10 <2'
@@ -6032,7 +6032,7 @@ snapshots:
 
   '@nolyfill/is-core-module@1.0.39': {}
 
-  '@open-waters-digital/analytics@1.2.0(posthog-js@1.438.7(@types/react@19.2.14)(react@19.2.6))(posthog-node@5.55.1)':
+  '@open-waters-digital/analytics@1.2.1(posthog-js@1.438.7(@types/react@19.2.14)(react@19.2.6))(posthog-node@5.55.1)':
     dependencies:
       posthog-js: 1.438.7(@types/react@19.2.14)(react@19.2.6)
       posthog-node: 5.55.1

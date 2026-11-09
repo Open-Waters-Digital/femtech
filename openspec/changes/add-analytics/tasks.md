@@ -2,7 +2,7 @@
 
 ## 1. The package
 
-- [x] 1.1 Add `@open-waters-digital/analytics@1.2.0`, `posthog-js` and `posthog-node` at luxury-gardens' versions; the scope line in `.npmrc`; `core-js: false` and the `@open-waters-digital/*` release-age exemption in `pnpm-workspace.yaml`. Verify `pnpm install --frozen-lockfile` with `NODE_AUTH_TOKEN` exported, and no token in the committed `.npmrc`.
+- [x] 1.1 Add `@open-waters-digital/analytics@1.2.1`, `posthog-js` and `posthog-node` at luxury-gardens' versions; the scope line in `.npmrc`; `core-js: false` and the `@open-waters-digital/*` release-age exemption in `pnpm-workspace.yaml`. Verify `pnpm install --frozen-lockfile` with `NODE_AUTH_TOKEN` exported, and no token in the committed `.npmrc`.
 - [x] 1.2 `scripts/docker-install.sh`; `ARG NODE_AUTH_TOKEN` in the install stages only and `NEXT_PUBLIC_POSTHOG_KEY/HOST` where the build reads them; CI `packages: read`, setup-node `registry-url`/`scope`, the token for install and the image; `preserve()` for all three on Railway; the variables, unset, in `env.example`. Verify the image builds and `docker history` shows no token.
 
 ## 2. Gate, CSP, page types and markup

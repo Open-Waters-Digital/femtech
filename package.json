@@ -31,7 +31,7 @@
     "db:down": "docker compose down"
   },
   "dependencies": {
-    "@open-waters-digital/analytics": "1.2.0",
+    "@open-waters-digital/analytics": "1.2.1",
     "@payloadcms/db-postgres": "3.90.1",
     "@payloadcms/next": "3.90.1",
     "@payloadcms/richtext-lexical": "3.90.1",
