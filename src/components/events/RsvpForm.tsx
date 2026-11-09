@@ -1,9 +1,11 @@
 'use client'
 
+import { formErrorShown, formSubmitted } from '@open-waters-digital/analytics/browser'
 import { type FormEvent, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 
 import { type RsvpStatus, RsvpFormView } from '@/components/events/RsvpFormView'
 import { useTurnstile } from '@/components/turnstile/useTurnstile'
+import { formErrorTypes } from '@/lib/analytics/form-errors'
 import {
   type RsvpFieldErrors,
   rsvpFieldErrors,
@@ -23,6 +25,9 @@ import {
  * The Turnstile script (`useTurnstile`, shared with the sign-up form) loads
  * only once the form is on screen: the site's one third-party script.
  */
+
+/** The form's id in the analytics event list, as on its data-form-id. */
+const FORM_ID = 'rsvp'
 
 /**
  * False on the server and during hydration, true once running in the browser.
@@ -66,10 +71,14 @@ export function RsvpForm({
     const form = event.currentTarget
     const data = new FormData(form)
 
-    const parsed = rsvpSchema.safeParse(rsvpInput(data))
+    const input = rsvpInput(data)
+    const parsed = rsvpSchema.safeParse(input)
     if (!parsed.success) {
       const fields = rsvpFieldErrors(parsed.error)
       setErrors(fields)
+      for (const [field, type] of formErrorTypes(parsed.error, input)) {
+        formErrorShown(FORM_ID, field, type)
+      }
       const first = Object.keys(fields)[0]
       if (first) form.querySelector<HTMLElement>(`[name="${first}"]`)?.focus()
       return
@@ -87,11 +96,14 @@ export function RsvpForm({
       const record = body && typeof body === 'object' ? (body as Record<string, unknown>) : {}
 
       if (response.ok) {
+        formSubmitted(FORM_ID)
         setStatus({ kind: 'confirmed', email: parsed.data.email })
         return
       }
       if (response.status === 400 && record.fields && typeof record.fields === 'object') {
-        setErrors(record.fields as RsvpFieldErrors)
+        const fields = record.fields as RsvpFieldErrors
+        for (const field of Object.keys(fields)) formErrorShown(FORM_ID, field, 'server')
+        setErrors(fields)
         setStatus({ kind: 'editing' })
         return
       }

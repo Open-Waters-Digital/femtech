@@ -14,6 +14,8 @@ const db = vi.hoisted(() => ({
   turnstile: 'pass' as 'pass' | 'fail' | 'unavailable',
   welcome: vi.fn(async (): Promise<string> => 'sent'),
   notify: vi.fn(async (): Promise<string> => 'sent'),
+  /** The analytics lead event: what it was sent, and how it behaves. */
+  lead: vi.fn(async (_properties: unknown): Promise<void> => undefined),
 }))
 
 vi.mock('@payload-config', () => ({ default: Promise.resolve({}) }))
@@ -25,6 +27,10 @@ vi.mock('next/server', () => ({
 }))
 
 vi.mock('@/lib/signup/notify', () => ({ notifyTeam: db.notify }))
+vi.mock('@/lib/analytics/lead', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/analytics/lead')>()),
+  sendLead: db.lead,
+}))
 vi.mock('@/lib/turnstile', () => ({ verifyTurnstile: vi.fn(async () => db.turnstile) }))
 vi.mock('@/lib/signup/welcome', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/signup/welcome')>()),
@@ -90,6 +96,7 @@ beforeEach(() => {
   db.update.mockReset()
   db.welcome.mockReset().mockResolvedValue('sent')
   db.notify.mockReset().mockResolvedValue('sent')
+  db.lead.mockReset().mockResolvedValue(undefined)
   resetRateLimit()
 })
 
@@ -303,5 +310,113 @@ describe('POST /join: the welcome email', () => {
     warn.mockRestore()
     error.mockRestore()
     log.mockRestore()
+  })
+})
+
+describe('POST /join: the lead event', () => {
+  const SEARCH = JSON.stringify({ referring_domain: 'www.google.com', utm_campaign: 'spring' })
+
+  it('counts a new member once, with the channel, after the response', async () => {
+    await POST(post({ ...WITH_TOKEN, ow_attribution: SEARCH }, 'application/json'))
+    expect(db.lead).not.toHaveBeenCalled()
+    await runAfter()
+    expect(db.lead).toHaveBeenCalledTimes(1)
+    expect(db.lead).toHaveBeenCalledWith({
+      form_id: 'signup',
+      lead_type: 'membership',
+      channel: 'organic_search',
+      referring_domain: 'www.google.com',
+      utm_campaign: 'spring',
+    })
+  })
+
+  it('is unknown for a sign-up posted without JavaScript', async () => {
+    // The native form sends the hidden field empty.
+    await POST(post({ ...VALID, ow_attribution: '' }))
+    await runAfter()
+    expect(db.lead).toHaveBeenCalledWith({
+      form_id: 'signup',
+      lead_type: 'membership',
+      channel: 'unknown',
+    })
+  })
+
+  it('never stores, emails or logs the attribution', async () => {
+    const lines: string[] = []
+    const capture = (...args: unknown[]) => {
+      lines.push(args.map(String).join(' '))
+    }
+    const warn = vi.spyOn(console, 'warn').mockImplementation(capture)
+    const error = vi.spyOn(console, 'error').mockImplementation(capture)
+    await POST(post({ ...WITH_TOKEN, ow_attribution: SEARCH }, 'application/json'))
+    await runAfter()
+    const seen = JSON.stringify([
+      db.create.mock.calls,
+      db.update.mock.calls,
+      db.welcome.mock.calls,
+      db.notify.mock.calls,
+      lines,
+    ])
+    expect(seen).not.toMatch(/ow_attribution|google|spring/)
+    warn.mockRestore()
+    error.mockRestore()
+  })
+
+  it('refuses an attribution over the limit like any over-long field', async () => {
+    const response = await POST(
+      post({ ...VALID, ow_attribution: 'x'.repeat(2049) }, 'application/json'),
+    )
+    expect(response.status).toBe(400)
+    expect(db.create).not.toHaveBeenCalled()
+    await runAfter()
+    expect(db.lead).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['a honeypot', { ...VALID, website: 'spam' }],
+    ['a schema failure', { ...VALID, industry: 'astrology' }],
+  ])('counts nothing for %s', async (_label, fields) => {
+    await POST(post(fields, 'application/json'))
+    await runAfter()
+    expect(db.lead).not.toHaveBeenCalled()
+  })
+
+  it('counts nothing for a repeat sign-up', async () => {
+    await POST(post(VALID, 'application/json'))
+    await runAfter()
+    db.lead.mockClear()
+    await POST(post({ ...VALID, email: 'ADA@example.com' }, 'application/json'))
+    await runAfter()
+    expect(db.lead).not.toHaveBeenCalled()
+  })
+
+  it('leaves the response, the welcome and the record alone when the capture throws', async () => {
+    db.lead.mockRejectedValue(new Error('posthog down'))
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const response = await POST(post(WITH_TOKEN, 'application/json'))
+    expect(response.status).toBe(200)
+    await expect(runAfter()).resolves.toBeUndefined()
+    expect(db.welcome).toHaveBeenCalledTimes(1)
+    expect(db.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { notification: 'sent', welcomeEmail: 'sent' } }),
+    )
+    expect(error).toHaveBeenCalledWith('[join] lead event failed', 'Error')
+    error.mockRestore()
+  })
+
+  it('answers before a hanging capture, and has welcomed by the time it starts', async () => {
+    let started = false
+    db.lead.mockImplementation(() => {
+      started = true
+      return new Promise<void>(() => undefined)
+    })
+    const response = await POST(post(WITH_TOKEN, 'application/json'))
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ ok: true })
+    const task = db.pending.splice(0)[0]
+    void task?.()
+    await vi.waitFor(() => expect(started).toBe(true))
+    expect(db.welcome).toHaveBeenCalledTimes(1)
+    expect(db.update).toHaveBeenCalledTimes(1)
   })
 })

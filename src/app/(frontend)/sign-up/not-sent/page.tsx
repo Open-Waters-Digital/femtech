@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 
+import { Main } from '@/components/layout/Main'
 import { SiteHeader } from '@/components/layout/SiteHeader'
 import { Button } from '@/components/primitives/Button'
 import { Container } from '@/components/primitives/Container'
@@ -37,17 +38,17 @@ export default async function NotSentPage({
   return (
     <>
       <SiteHeader tone="dark" pathname="/sign-up/not-sent" />
-      <main id="main" className="pt-36 pb-16 md:pt-48">
+      <Main pageType="other" className="pt-36 pb-16 md:pt-48">
         <Container width="statement" className="flex flex-col items-start gap-6">
           <Heading level={1} size="2xl">
             Not signed up yet
           </Heading>
           <Text size="lead">{message}</Text>
-          <Button href="/sign-up" variant="secondary">
+          <Button href="/sign-up" variant="secondary" data-cta="join" data-cta-location="not-sent">
             Back to the form
           </Button>
         </Container>
-      </main>
+      </Main>
     </>
   )
 }

@@ -20,9 +20,16 @@ RUN corepack enable && corepack prepare pnpm@${PNPM_VERSION} --activate
 WORKDIR /app
 
 # Manifests before source, so the dependency layer caches across source changes.
+#
+# NODE_AUTH_TOKEN reads @open-waters-digital/analytics from GitHub Packages. A
+# build argument in the two install stages only, so it never reaches the build
+# stage or the runtime image; used inside docker-install.sh rather than inline,
+# because BuildKit prints a RUN step with its arguments expanded and an inline
+# reference would put the token in the build log.
 FROM base AS deps
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
-RUN pnpm install --frozen-lockfile
+ARG NODE_AUTH_TOKEN
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc scripts/docker-install.sh ./
+RUN sh docker-install.sh
 
 FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
@@ -33,13 +40,24 @@ COPY . .
 # argument is an empty string, which site-env.ts treats as unset.
 ARG NEXT_PUBLIC_SITE_URL
 ENV NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
+# The analytics project key and proxy host, inlined the same way: into the
+# browser's bundle and into the policy proxy.ts builds. Both optional; without
+# either, analytics never starts and the policy names no analytics host. The
+# key is a public project key, not a secret, which is why it can be a build
+# argument at all.
+ARG NEXT_PUBLIC_POSTHOG_KEY
+ENV NEXT_PUBLIC_POSTHOG_KEY=${NEXT_PUBLIC_POSTHOG_KEY}
+ARG NEXT_PUBLIC_POSTHOG_HOST
+ENV NEXT_PUBLIC_POSTHOG_HOST=${NEXT_PUBLIC_POSTHOG_HOST}
 ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN pnpm run build
 
 FROM base AS prod-deps
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
-RUN pnpm install --frozen-lockfile --prod
+# The same private install as deps, for the runtime's dependencies. See there.
+ARG NODE_AUTH_TOKEN
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc scripts/docker-install.sh ./
+RUN sh docker-install.sh --prod
 
 FROM base AS runtime
 ENV NODE_ENV=production

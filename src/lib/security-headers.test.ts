@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   STATIC_SECURITY_HEADERS,
   TURNSTILE_ORIGIN,
+  analyticsOrigin,
   contentSecurityPolicy,
   createNonce,
 } from '@/lib/security-headers'
@@ -82,5 +83,33 @@ describe('STATIC_SECURITY_HEADERS', () => {
       key: 'X-Content-Type-Options',
       value: 'nosniff',
     })
+  })
+})
+
+describe('the analytics host in the policy', () => {
+  it('admits the proxy origin for scripts and connections when set', () => {
+    const policy = contentSecurityPolicy({
+      ...PRODUCTION,
+      analyticsHost: 'https://e.femtechhealth.com/',
+    })
+    expect(directive(policy, 'script-src')).toContain('https://e.femtechhealth.com')
+    expect(directive(policy, 'connect-src')).toEqual(["'self'", 'https://e.femtechhealth.com'])
+  })
+
+  it.each([
+    ['unset', undefined],
+    ['empty', ''],
+    ['not a URL', 'e.femtechhealth.com'],
+    ['not http(s)', 'javascript:alert(1)'],
+  ])('adds nothing when the host is %s', (_label, host) => {
+    const policy = contentSecurityPolicy({ ...PRODUCTION, analyticsHost: host })
+    expect(directive(policy, 'connect-src')).toEqual(["'self'"])
+    expect(policy).toBe(contentSecurityPolicy(PRODUCTION))
+  })
+
+  it('reduces a host to its origin', () => {
+    expect(analyticsOrigin('https://e.femtechhealth.com/path?x=1')).toBe(
+      'https://e.femtechhealth.com',
+    )
   })
 })

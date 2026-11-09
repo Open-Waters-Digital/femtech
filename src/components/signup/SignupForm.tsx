@@ -1,16 +1,25 @@
 'use client'
 
+import {
+  attributionField,
+  formErrorShown,
+  formSubmitted,
+} from '@open-waters-digital/analytics/browser'
 import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react'
 
 import { type SignupStatus, SignupFormView } from '@/components/signup/SignupFormView'
 import type { SignupThanksContent } from '@/components/signup/SignupThanks'
 import { useTurnstile } from '@/components/turnstile/useTurnstile'
+import { formErrorTypes } from '@/lib/analytics/form-errors'
 import {
   type SignupFieldErrors,
   signupInput,
   signupSchema,
   toFieldErrors,
 } from '@/lib/signup/schema'
+
+/** The form's id in the analytics event list, as on its data-form-id. */
+const FORM_ID = 'signup'
 
 /** How long a quick sender waits for the invisible check before going without it. */
 const CHECK_WAIT_MS = 5_000
@@ -79,10 +88,14 @@ export function SignupForm({
     event.preventDefault()
     const form = event.currentTarget
 
-    const parsed = signupSchema.safeParse(signupInput(new FormData(form)))
+    const input = signupInput(new FormData(form))
+    const parsed = signupSchema.safeParse(input)
     if (!parsed.success) {
       const fields = toFieldErrors(parsed.error)
       setErrors(fields)
+      for (const [field, type] of formErrorTypes(parsed.error, input)) {
+        formErrorShown(FORM_ID, field, type)
+      }
       // Focus the first field in error, in the order they appear.
       const first = Object.keys(fields)[0]
       if (first) form.querySelector<HTMLElement>(`[name="${first}"]`)?.focus()
@@ -107,6 +120,8 @@ export function SignupForm({
     }
     // Read after the wait, so the token the widget wrote is in it.
     const data = new FormData(form)
+    // Empty when analytics is dormant or the visitor objected.
+    data.set('ow_attribution', attributionField())
 
     try {
       const response = await fetch('/join', {
@@ -116,11 +131,14 @@ export function SignupForm({
       })
       const body: unknown = await response.json().catch(() => null)
       if (response.ok) {
+        formSubmitted(FORM_ID)
         setStatus({ kind: 'sent' })
         return
       }
       if (response.status === 400 && body && typeof body === 'object' && 'fields' in body) {
-        setErrors(body.fields as SignupFieldErrors)
+        const fields = body.fields as SignupFieldErrors
+        for (const field of Object.keys(fields)) formErrorShown(FORM_ID, field, 'server')
+        setErrors(fields)
         setStatus({ kind: 'editing' })
         return
       }

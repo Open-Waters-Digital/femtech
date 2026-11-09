@@ -17,6 +17,7 @@ export function proxy(request: NextRequest): NextResponse {
     nonce: createNonce(),
     development: siteEnv() === 'development' && process.env.NODE_ENV === 'development',
     https: siteEnv() !== 'development',
+    analyticsHost: process.env.NEXT_PUBLIC_POSTHOG_HOST,
   })
 
   const requestHeaders = new Headers(request.headers)

@@ -56,7 +56,10 @@ export function RsvpFormView({
       method="post"
       noValidate
       onSubmit={onSubmit}
-      className="flex flex-col gap-5"
+      // Named for analytics' form events, and excluded from its automatic
+      // capture. No attribution: an RSVP is not a lead.
+      data-form-id="rsvp"
+      className="ph-no-capture flex flex-col gap-5"
       aria-label="RSVP"
     >
       <Field name="firstName" label="First name" required error={errors.firstName}>
@@ -112,7 +115,12 @@ export function RsvpFormView({
       ) : null}
 
       <div>
-        <Button type="submit" disabled={sending}>
+        <Button
+          type="submit"
+          disabled={sending}
+          data-cta="event-rsvp"
+          data-cta-location="event-page"
+        >
           {sending ? 'Sending…' : 'Reserve my place'}
         </Button>
       </div>

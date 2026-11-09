@@ -43,7 +43,9 @@ export async function SiteFooter() {
                 </p>
               ) : null}
               {settings.footerCtaLabel ? (
-                <Button href={SIGN_UP_PATH}>{settings.footerCtaLabel}</Button>
+                <Button href={SIGN_UP_PATH} data-cta="join" data-cta-location="footer">
+                  {settings.footerCtaLabel}
+                </Button>
               ) : null}
             </div>
             <nav aria-label="Footer">
@@ -65,7 +67,12 @@ export async function SiteFooter() {
                     : [],
                 )}
                 <li>
-                  <NextLink href={SIGN_UP_PATH} className="flex min-h-11 items-center">
+                  <NextLink
+                    href={SIGN_UP_PATH}
+                    className="flex min-h-11 items-center"
+                    data-cta="join"
+                    data-cta-location="footer-nav"
+                  >
                     Sign up
                   </NextLink>
                 </li>

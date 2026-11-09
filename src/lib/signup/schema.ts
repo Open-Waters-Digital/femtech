@@ -113,3 +113,24 @@ export function toFieldErrors(error: z.ZodError): SignupFieldErrors {
   }
   return fields
 }
+
+/**
+ * The visit's attribution as the form sends it (`ow_attribution`): its landing
+ * page and referring site, as the analytics package records them. Kept apart
+ * from `signupSchema` on purpose, so it can never reach the member, an email or
+ * a log by riding along with the sign-up. Read only to classify the lead
+ * event's channel. Optional, because the form without JavaScript sends it
+ * empty; over the limit it is refused like any other over-long field.
+ */
+export const ATTRIBUTION_MAX = 2048
+
+export const attributionSchema = z
+  .string()
+  .max(ATTRIBUTION_MAX, `Please keep this under ${ATTRIBUTION_MAX} characters.`)
+  .optional()
+
+/** The attribution from a FormData: undefined when absent or not a string. */
+export function attributionInput(form: FormData): string | undefined {
+  const value = form.get('ow_attribution')
+  return typeof value === 'string' ? value : undefined
+}

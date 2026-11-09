@@ -104,7 +104,14 @@ export function MobileMenu({ tone, pathname }: { tone: 'light' | 'dark'; pathnam
             ))}
           </ul>
         </nav>
-        <Button href={SIGN_UP_PATH} surface="inverse" size="lg" onClick={() => setOpen(false)}>
+        <Button
+          href={SIGN_UP_PATH}
+          surface="inverse"
+          size="lg"
+          onClick={() => setOpen(false)}
+          data-cta="join"
+          data-cta-location="menu"
+        >
           Sign Up
         </Button>
       </div>

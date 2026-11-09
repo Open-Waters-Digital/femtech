@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 
+import { Main } from '@/components/layout/Main'
 import { SiteHeader } from '@/components/layout/SiteHeader'
 import { Button } from '@/components/primitives/Button'
 import { Container } from '@/components/primitives/Container'
@@ -18,7 +19,7 @@ export default async function ThankYouPage() {
   return (
     <>
       <SiteHeader tone="dark" pathname="/sign-up/thank-you" />
-      <main id="main" className="pt-36 pb-16 md:pt-48">
+      <Main pageType="other" className="pt-36 pb-16 md:pt-48">
         <Container width="statement" className="flex flex-col items-start gap-10">
           <SignupThanks
             headingLevel={1}
@@ -32,7 +33,7 @@ export default async function ThankYouPage() {
             Back to the home page
           </Button>
         </Container>
-      </main>
+      </Main>
     </>
   )
 }

@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 
 import { ROLE_LABELS, eventWhere } from '@/components/events/labels'
 import { RsvpPanel } from '@/components/events/RsvpPanel'
+import { Main } from '@/components/layout/Main'
 import { SiteHeader } from '@/components/layout/SiteHeader'
 import { Container } from '@/components/primitives/Container'
 import { Eyebrow } from '@/components/primitives/Eyebrow'
@@ -52,7 +53,7 @@ export default async function EventPage({ params }: Params) {
   return (
     <>
       <SiteHeader tone="dark" pathname={`/events/${event.slug}`} />
-      <main id="main" className="pt-36 pb-16 md:pt-48">
+      <Main pageType="other" className="pt-36 pb-16 md:pt-48">
         <Container className="grid gap-12 lg:grid-cols-12">
           <div className="flex flex-col gap-8 lg:col-span-7">
             <NextLink href="/events" className="font-body text-sm text-text-muted hover:text-text">
@@ -125,7 +126,7 @@ export default async function EventPage({ params }: Params) {
             </div>
           </aside>
         </Container>
-      </main>
+      </Main>
     </>
   )
 }

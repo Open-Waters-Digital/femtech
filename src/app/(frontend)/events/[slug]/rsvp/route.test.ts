@@ -19,11 +19,14 @@ const db = vi.hoisted(() => ({
   afterTasks: [] as (() => unknown)[],
   turnstile: 'pass' as 'pass' | 'fail' | 'unavailable',
   sent: [] as unknown[],
+  lead: vi.fn(async (): Promise<void> => undefined),
 }))
 
 vi.mock('@payload-config', () => ({ default: Promise.resolve({}) }))
 vi.mock('next/server', () => ({ after: (task: () => unknown) => db.afterTasks.push(task) }))
 vi.mock('@/lib/turnstile', () => ({ verifyTurnstile: async () => db.turnstile }))
+// An RSVP is not a lead: nothing here may count one.
+vi.mock('@/lib/analytics/lead', () => ({ sendLead: db.lead, leadProperties: () => ({}) }))
 vi.mock('@/lib/events/confirm', () => ({
   sendConfirmation: async (registration: unknown) => {
     db.sent.push(registration)
@@ -172,6 +175,7 @@ describe('POST /events/[slug]/rsvp', () => {
     await runAfterTasks()
     expect(db.sent).toEqual([expect.objectContaining({ email: 'ada@example.com' })])
     expect(db.registrations[0]).toMatchObject({ confirmation: 'skipped' })
+    expect(db.lead).not.toHaveBeenCalled()
   })
 
   it('links the registration to the member with the same address, and leaves the member alone', async () => {

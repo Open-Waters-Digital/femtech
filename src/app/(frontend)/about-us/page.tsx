@@ -9,6 +9,7 @@ import {
   WhatWeDo,
   WhyWeExist,
 } from '@/components/about/AboutSections'
+import { Main } from '@/components/layout/Main'
 import { SiteHeader } from '@/components/layout/SiteHeader'
 import { getAbout } from '@/lib/content'
 
@@ -24,7 +25,7 @@ export default async function AboutPage() {
   return (
     <>
       <SiteHeader tone="light" pathname="/about-us" />
-      <main id="main">
+      <Main pageType="about">
         <AboutHero about={about} />
         <Mission about={about} />
         <WhyWeExist about={about} />
@@ -32,7 +33,7 @@ export default async function AboutPage() {
         <Values about={about} />
         <Founder about={about} />
         <Join about={about} />
-      </main>
+      </Main>
     </>
   )
 }

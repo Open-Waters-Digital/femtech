@@ -54,7 +54,10 @@ export function SignupFormView({
       method="post"
       noValidate
       onSubmit={onSubmit}
-      className="flex flex-col gap-6"
+      // Named for analytics' form events, and excluded from its automatic
+      // capture: nothing typed here is ever recorded.
+      data-form-id="signup"
+      className="ph-no-capture flex flex-col gap-6"
     >
       <div className="grid gap-6 md:grid-cols-2">
         <Field name="firstName" label="First name" required error={errors.firstName}>
@@ -152,6 +155,10 @@ export function SignupFormView({
         </label>
       </div>
       <input type="hidden" name="dwell" value={dwellToken} />
+      {/* The visit's landing page and referrer, for the sign-up's channel.
+          Filled by SignupForm as it sends; empty without JavaScript, which
+          counts as an unknown channel. Never stored, emailed or logged. */}
+      <input type="hidden" name="ow_attribution" value="" />
 
       {/* Turnstile draws here, and adds its own hidden cf-turnstile-response
           field to the form. Invisible unless Cloudflare wants a tick. Without

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import type { ReactNode } from 'react'
 
+import { Analytics } from '@/components/analytics/Analytics'
 import { RevealObserver } from '@/components/layout/RevealObserver'
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { SITE_DESCRIPTION, SITE_NAME, THEME_COLOR } from '@/lib/brand-constants'
@@ -83,6 +84,9 @@ export default function FrontendLayout({ children }: { children: ReactNode }) {
         {children}
         <SiteFooter />
         <RevealObserver />
+        {/* Indexable is decided here because SITE_ENV is server-only; the
+            component holds the rest of the gate. Renders nothing. */}
+        <Analytics indexable={isIndexable()} />
       </body>
     </html>
   )
